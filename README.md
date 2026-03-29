@@ -16,7 +16,7 @@ This Turborepo includes the following packages/apps:
 
 ### Apps and Packages
 
-- `docs`: a [Next.js](https://nextjs.org/) app
+- `docs`: a [Storybook](https://storybook.js.org/) docs app for `@horcruxsys/nagini/ui`
 - `web`: another [Next.js](https://nextjs.org/) app
 - `@horcruxsys/nagini/ui`: a stub React component library shared by both `web` and `docs` applications
 - `@horcruxsys/nagini/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)

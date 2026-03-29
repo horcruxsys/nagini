@@ -1,23 +1,13 @@
 {
-  "extends": "@horcruxsys/nagini/typescript-config/nextjs.json",
+  "extends": "@horcruxsys/nagini/typescript-config/react-library.json",
+  "include": ["."],
+  "exclude": ["dist", "build", "node_modules"],
   "compilerOptions": {
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
     "strictNullChecks": true,
     "baseUrl": ".",
     "paths": {
-      "@horcruxsys/nagini/ui/*": ["../../packages/ui/src/*"]
+      "@horcruxsys/nagini/ui": ["../../packages/ui/src"],
+      "@horcruxsys/nagini/ui/*": ["../../packages/ui/src/*.tsx"]
     }
-  },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "next-env.d.ts",
-    "next.config.js",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": ["node_modules"]
+  }
 }
