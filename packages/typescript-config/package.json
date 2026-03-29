@@ -1,6 +1,5 @@
 {
-  "name": "@repo/typescript-config",
-  "version": "0.0.0",
+  "name": "@horcruxsys/nagini/typescript-config",
   "private": true,
   "license": "MIT",
   "publishConfig": {

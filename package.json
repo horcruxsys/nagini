@@ -1,6 +1,7 @@
 {
-  "name": "nagini",
+  "name": "@horcruxsys/nagini",
   "private": true,
+  "version": "2026.0329.0",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
