@@ -123,3 +123,92 @@ export interface RunEvent {
   detail: string;
   createdAt: string;
 }
+
+// ── Connector canonical models ──────────────────────────────────────
+
+export interface ProjectConnection {
+  id: string;
+  projectId: string;
+  provider: "github" | "jira" | "confluence";
+  authType: "oauth" | "app" | "token" | "mcp";
+  status: "active" | "error" | "disabled";
+  externalBaseUrl?: string;
+  scopes: string[];
+  encryptedSecretRef: string;
+  lastSuccessfulSyncAt?: string;
+}
+
+export interface SourceDocument {
+  id: string;
+  projectId: string;
+  provider: "jira" | "confluence" | "repo";
+  externalId: string;
+  title: string;
+  bodyMarkdown: string;
+  bodyText: string;
+  url: string;
+  author?: string;
+  labels: string[];
+  aclPrincipals: string[];
+  checksum: string;
+  updatedAt: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface DocumentChunk {
+  id: string;
+  documentId: string;
+  chunkIndex: number;
+  headingPath: string[];
+  tokenCount: number;
+  text: string;
+  embedding?: number[];
+  keywords: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface SyncJob {
+  id: string;
+  provider: "github" | "jira" | "confluence";
+  scopeKey: string;
+  mode: "full" | "incremental" | "webhook";
+  status: "queued" | "running" | "succeeded" | "failed";
+  startedAt?: string;
+  finishedAt?: string;
+  cursorState?: Record<string, unknown>;
+  errorText?: string;
+}
+
+// ── GitHub extended interfaces ──────────────────────────────────────
+
+export interface RepoTreeEntry {
+  path: string;
+  type: "blob" | "tree";
+  sha: string;
+  size?: number;
+}
+
+export interface CodeSearchResult {
+  path: string;
+  repository: string;
+  url: string;
+  snippet: string;
+}
+
+// ── Retrieval types ─────────────────────────────────────────────────
+
+export interface RetrievalRequest {
+  projectId: string;
+  intent: "plan" | "implement" | "review";
+  issueKey: string;
+  textQuery: string;
+  relatedTerms: string[];
+  repoHints?: string[];
+  topK: number;
+}
+
+export interface ScoredChunk {
+  chunk: DocumentChunk;
+  score: number;
+  source: "bm25" | "vector" | "hybrid";
+}

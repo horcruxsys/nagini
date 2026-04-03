@@ -4,11 +4,7 @@
     "outDir": "dist",
     "strictNullChecks": true,
     "baseUrl": ".",
-    "paths": {
-      "@horcruxsys/nagini/config": ["../config/src/index.ts"],
-      "@horcruxsys/nagini/domain": ["../domain/src/index.ts"],
-      "@horcruxsys/nagini/persistence": ["../persistence/src/index.ts"]
-    }
+    "paths": {}
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

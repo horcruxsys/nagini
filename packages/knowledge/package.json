@@ -15,7 +15,8 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@horcruxsys/nagini/domain": "workspace:*"
+    "@horcruxsys/nagini/domain": "workspace:*",
+    "@horcruxsys/nagini/persistence": "workspace:*"
   },
   "devDependencies": {
     "@horcruxsys/nagini/eslint-config": "workspace:*",

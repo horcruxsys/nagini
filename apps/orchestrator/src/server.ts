@@ -1,6 +1,6 @@
 import Fastify from "fastify";
 
-import { RunRequestSchema, type RunRecord } from "@horcruxsys/nagini/domain";
+import { RunRequestSchema } from "@horcruxsys/nagini/domain";
 import {
   buildRunTimeline,
   OrchestratorWorkflowService,
@@ -9,7 +9,6 @@ import {
 export function buildServer() {
   const app = Fastify({ logger: true });
   const workflowService = new OrchestratorWorkflowService();
-  const runStore = new Map<string, RunRecord>();
 
   app.get("/health", async () => ({
     status: "ok",
@@ -20,11 +19,12 @@ export function buildServer() {
   app.get("/api/capabilities", async () => ({
     modes: ["explain", "plan", "implement", "review"],
     integrations: ["github", "jira", "confluence"],
-    validationMode: "simulation",
+    validationMode: "local",
+    knowledgeMode: "hybrid",
   }));
 
   app.get("/api/runs", async () => ({
-    items: [...runStore.values()],
+    items: await workflowService.listRuns(),
   }));
 
   app.post("/api/runs", async (request, reply) => {
@@ -38,14 +38,12 @@ export function buildServer() {
     }
 
     const run = await workflowService.run(parsed.data);
-    runStore.set(run.id, run);
-
     return reply.status(201).send(run);
   });
 
   app.get("/api/runs/:runId", async (request, reply) => {
     const { runId } = request.params as { runId: string };
-    const run = runStore.get(runId);
+    const run = await workflowService.getRun(runId);
 
     if (!run) {
       return reply.status(404).send({ message: `Run ${runId} was not found.` });
@@ -56,7 +54,7 @@ export function buildServer() {
 
   app.get("/api/runs/:runId/events", async (request, reply) => {
     const { runId } = request.params as { runId: string };
-    const run = runStore.get(runId);
+    const run = await workflowService.getRun(runId);
 
     if (!run) {
       return reply.status(404).send({ message: `Run ${runId} was not found.` });

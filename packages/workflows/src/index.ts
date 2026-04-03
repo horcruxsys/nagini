@@ -1,57 +1,163 @@
 import { randomUUID } from "node:crypto";
 
 import { DeterministicPlanningAgent } from "@horcruxsys/nagini/agents";
+import { loadPartialConfig } from "@horcruxsys/nagini/config";
 import { createConnectorBundle } from "@horcruxsys/nagini/connectors";
 import type {
+  ContextCitation,
   RunEvent,
   RunRecord,
   RunRequest,
+  SourceDocument,
+  WorkItem,
 } from "@horcruxsys/nagini/domain";
 import { LocalExecutionService } from "@horcruxsys/nagini/execution";
-import { StaticKnowledgeService } from "@horcruxsys/nagini/knowledge";
+import { HybridKnowledgeService } from "@horcruxsys/nagini/knowledge";
+import { createPersistenceLayer } from "@horcruxsys/nagini/persistence";
 
 export class OrchestratorWorkflowService {
-  private readonly connectors = createConnectorBundle();
-  private readonly knowledgeService = new StaticKnowledgeService();
+  private readonly config = loadPartialConfig();
+  private readonly connectors = createConnectorBundle(this.config);
+  private readonly persistence = createPersistenceLayer(this.config.postgres);
+  private readonly knowledgeService = new HybridKnowledgeService(
+    this.persistence,
+  );
   private readonly planningAgent = new DeterministicPlanningAgent();
   private readonly executionService = new LocalExecutionService();
 
-  async run(request: RunRequest): Promise<RunRecord> {
-    const workItem = await this.connectors.jira.getWorkItem(request.issueKey);
-    const citations = await this.connectors.confluence.getRelatedPages(
-      request.issueKey,
-    );
-    const impactedAreas = await this.connectors.github.findRelevantFiles(
-      request.repo,
-      request.issueKey,
-    );
-    const contextPack = await this.knowledgeService.createContextPack({
-      workItem,
-      citations,
-      repoHints: impactedAreas,
-    });
-    const plan = await this.planningAgent.createPlan(contextPack);
-    const validation =
-      request.mode === "implement"
-        ? await this.executionService.runValidation(plan, request.repo)
-        : undefined;
-    const timestamp = new Date().toISOString();
+  async listRuns(): Promise<RunRecord[]> {
+    return this.persistence.listRuns();
+  }
 
-    return {
-      id: randomUUID(),
+  async getRun(runId: string): Promise<RunRecord | undefined> {
+    return this.persistence.getRun(runId);
+  }
+
+  async run(request: RunRequest): Promise<RunRecord> {
+    const timestamp = new Date().toISOString();
+    const runId = randomUUID();
+    const initialRun: RunRecord = {
+      id: runId,
       projectId: request.projectId,
       issueKey: request.issueKey,
       mode: request.mode,
       repo: request.repo,
       baseBranch: request.baseBranch,
-      status: "completed",
-      summary: plan.summary,
+      status: "gathering_context",
+      summary: `Gathering context for ${request.issueKey}.`,
       createdAt: timestamp,
       updatedAt: timestamp,
-      contextPack,
-      plan,
-      validation,
     };
+
+    await this.persistence.saveRun(initialRun);
+
+    try {
+      const workItem = await this.connectors.jira.getWorkItem(request.issueKey);
+      const citations = await this.connectors.confluence.getRelatedPages(
+        request.issueKey,
+      );
+      const impactedAreas = await this.connectors.github.findRelevantFiles(
+        request.repo,
+        request.issueKey,
+      );
+
+      const documents = await this.collectDocuments(
+        request.projectId,
+        request.issueKey,
+        workItem,
+        citations,
+      );
+      await this.knowledgeService.ingestDocuments(request.projectId, documents);
+
+      const contextPack = await this.knowledgeService.createContextPack({
+        projectId: request.projectId,
+        workItem,
+        citations,
+        repoHints: impactedAreas,
+      });
+      const plan = await this.planningAgent.createPlan(contextPack);
+      const validation =
+        request.mode === "implement"
+          ? await this.executionService.runValidation(plan, request.repo)
+          : undefined;
+      const updatedAt = new Date().toISOString();
+      const finalRun: RunRecord = {
+        ...initialRun,
+        status: validation?.status === "fail" ? "failed" : "completed",
+        summary: plan.summary,
+        updatedAt,
+        contextPack,
+        plan,
+        validation,
+      };
+
+      await this.persistence.saveRun(finalRun);
+      return finalRun;
+    } catch (error) {
+      const failedRun: RunRecord = {
+        ...initialRun,
+        status: "failed",
+        updatedAt: new Date().toISOString(),
+        summary:
+          error instanceof Error
+            ? `Run failed: ${error.message}`
+            : "Run failed unexpectedly.",
+      };
+      await this.persistence.saveRun(failedRun);
+      throw error;
+    }
+  }
+
+  private async collectDocuments(
+    projectId: string,
+    issueKey: string,
+    workItem: WorkItem,
+    citations: ContextCitation[],
+  ): Promise<SourceDocument[]> {
+    const documents: SourceDocument[] = [];
+
+    if (typeof this.connectors.jira.getIssueAsDocument === "function") {
+      documents.push(
+        await this.connectors.jira.getIssueAsDocument(issueKey, projectId),
+      );
+    } else {
+      documents.push({
+        id: `jira-${issueKey}`,
+        projectId,
+        provider: "jira",
+        externalId: issueKey,
+        title: workItem.title,
+        bodyMarkdown: workItem.description,
+        bodyText: workItem.description,
+        url: `jira://${issueKey}`,
+        author: workItem.comments[0]?.author,
+        labels: workItem.labels,
+        aclPrincipals: [],
+        checksum: workItem.comments[0]?.createdAt ?? new Date().toISOString(),
+        updatedAt: workItem.comments[0]?.createdAt ?? new Date().toISOString(),
+        metadata: { priority: workItem.priority ?? null },
+      });
+    }
+
+    for (const [index, citation] of citations.entries()) {
+      documents.push({
+        id: `${citation.source}-${issueKey}-${index}`,
+        projectId,
+        provider: citation.source,
+        externalId: `${issueKey}-${index}`,
+        title: citation.title,
+        bodyMarkdown: citation.snippet,
+        bodyText: citation.snippet,
+        url: citation.url,
+        labels: [],
+        aclPrincipals: [],
+        checksum: citation.updatedAt,
+        updatedAt: citation.updatedAt,
+        metadata: { score: citation.score },
+      });
+    }
+
+    return documents;
   }
 }
 

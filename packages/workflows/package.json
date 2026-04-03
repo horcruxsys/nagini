@@ -16,10 +16,12 @@
   },
   "dependencies": {
     "@horcruxsys/nagini/agents": "workspace:*",
+    "@horcruxsys/nagini/config": "workspace:*",
     "@horcruxsys/nagini/connectors": "workspace:*",
     "@horcruxsys/nagini/domain": "workspace:*",
     "@horcruxsys/nagini/execution": "workspace:*",
-    "@horcruxsys/nagini/knowledge": "workspace:*"
+    "@horcruxsys/nagini/knowledge": "workspace:*",
+    "@horcruxsys/nagini/persistence": "workspace:*"
   },
   "devDependencies": {
     "@horcruxsys/nagini/eslint-config": "workspace:*",

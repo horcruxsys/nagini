@@ -1,26 +1,32 @@
+import type { AppConfig } from "@horcruxsys/nagini/config";
 import type { ContextCitation, WorkItem } from "@horcruxsys/nagini/domain";
+import { LiveConfluenceConnector } from "./confluence/client.js";
+import { LiveGitHubConnector } from "./github/client.js";
+import { LiveJiraConnector } from "./jira/client.js";
 
-export interface ConnectorHealth {
-  provider: "github" | "jira" | "confluence";
-  status: "ready" | "degraded";
-  message: string;
-  lastCheckedAt: string;
-}
+// Re-export types
+export type {
+  ConnectorBundle,
+  ConnectorHealth,
+  ConfluenceConnector,
+  GitHubConnector,
+  JiraConnector,
+} from "./types.js";
+export { LiveJiraConnector } from "./jira/client.js";
+export { LiveConfluenceConnector } from "./confluence/client.js";
+export { LiveGitHubConnector } from "./github/client.js";
+export { ConnectorError, withRetry } from "./shared/retry.js";
+export { htmlToMarkdown, stripHtml } from "./shared/canonicalize.js";
 
-export interface JiraConnector {
-  getWorkItem(issueKey: string): Promise<WorkItem>;
-  getHealth(): Promise<ConnectorHealth>;
-}
+import type {
+  ConfluenceConnector,
+  ConnectorBundle,
+  ConnectorHealth,
+  GitHubConnector,
+  JiraConnector,
+} from "./types.js";
 
-export interface ConfluenceConnector {
-  getRelatedPages(issueKey: string): Promise<ContextCitation[]>;
-  getHealth(): Promise<ConnectorHealth>;
-}
-
-export interface GitHubConnector {
-  findRelevantFiles(repo: string, issueKey: string): Promise<string[]>;
-  getHealth(): Promise<ConnectorHealth>;
-}
+// ── Stub implementations (used when credentials are absent) ─────────
 
 class StubJiraConnector implements JiraConnector {
   async getWorkItem(issueKey: string): Promise<WorkItem> {
@@ -54,7 +60,7 @@ class StubJiraConnector implements JiraConnector {
     return {
       provider: "jira",
       status: "ready",
-      message: "Stub Jira connector is healthy.",
+      message: "Stub Jira connector (no credentials configured).",
       lastCheckedAt: new Date().toISOString(),
     };
   }
@@ -73,16 +79,6 @@ class StubConfluenceConnector implements ConfluenceConnector {
         score: 0.96,
         updatedAt: new Date().toISOString(),
       },
-      {
-        id: `repo-${issueKey}-patterns`,
-        source: "repo",
-        title: "Monorepo integration patterns",
-        url: "https://github.com/horcruxsys/nagini",
-        snippet:
-          "Turborepo packages should share domain contracts and keep orchestration logic in a dedicated service layer.",
-        score: 0.91,
-        updatedAt: new Date().toISOString(),
-      },
     ];
   }
 
@@ -90,7 +86,7 @@ class StubConfluenceConnector implements ConfluenceConnector {
     return {
       provider: "confluence",
       status: "ready",
-      message: "Stub Confluence connector is healthy.",
+      message: "Stub Confluence connector (no credentials configured).",
       lastCheckedAt: new Date().toISOString(),
     };
   }
@@ -101,7 +97,6 @@ class StubGitHubConnector implements GitHubConnector {
     return [
       `apps/orchestrator/src/server.ts // ${repo}`,
       "packages/workflows/src/index.ts",
-      "packages/knowledge/src/index.ts",
       `docs/ai-orchestrator/00-technical-spec.md // ${issueKey}`,
     ];
   }
@@ -110,22 +105,32 @@ class StubGitHubConnector implements GitHubConnector {
     return {
       provider: "github",
       status: "ready",
-      message: "Stub GitHub connector is healthy.",
+      message: "Stub GitHub connector (no credentials configured).",
       lastCheckedAt: new Date().toISOString(),
     };
   }
 }
 
-export interface ConnectorBundle {
-  jira: JiraConnector;
-  confluence: ConfluenceConnector;
-  github: GitHubConnector;
-}
+// ── Factory ─────────────────────────────────────────────────────────
 
-export function createConnectorBundle(): ConnectorBundle {
-  return {
-    jira: new StubJiraConnector(),
-    confluence: new StubConfluenceConnector(),
-    github: new StubGitHubConnector(),
-  };
+/**
+ * Creates a connector bundle. If a section of `AppConfig` is provided,
+ * real connectors are used; otherwise stubs are returned.
+ */
+export function createConnectorBundle(
+  config?: Partial<AppConfig>,
+): ConnectorBundle {
+  const jira: JiraConnector = config?.jira
+    ? new LiveJiraConnector(config.jira)
+    : new StubJiraConnector();
+
+  const confluence: ConfluenceConnector = config?.confluence
+    ? new LiveConfluenceConnector(config.confluence)
+    : new StubConfluenceConnector();
+
+  const github: GitHubConnector = config?.github
+    ? new LiveGitHubConnector(config.github)
+    : new StubGitHubConnector();
+
+  return { jira, confluence, github };
 }

@@ -55,7 +55,7 @@ export class DeterministicPlanningAgent implements PlanningAgent {
       ],
       risks: [
         "Approval policies still need project-specific configuration.",
-        "Real connector credentials and sandbox execution are not wired in this scaffold.",
+        "Live connector and database access still depend on valid project credentials.",
       ],
     };
   }

@@ -5,7 +5,8 @@
     "strictNullChecks": true,
     "baseUrl": ".",
     "paths": {
-      "@horcruxsys/nagini/domain": ["../domain/src/index.ts"]
+      "@horcruxsys/nagini/domain": ["../domain/src/index.ts"],
+      "@horcruxsys/nagini/config": ["../config/src/index.ts"]
     }
   },
   "include": ["src"],

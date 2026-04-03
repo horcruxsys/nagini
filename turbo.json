@@ -1,7 +1,28 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
-  "globalEnv": ["HOST", "PORT"],
+  "globalEnv": [
+    "HOST",
+    "PORT",
+    "JIRA_BASE_URL",
+    "JIRA_EMAIL",
+    "JIRA_API_TOKEN",
+    "CONFLUENCE_BASE_URL",
+    "CONFLUENCE_EMAIL",
+    "CONFLUENCE_API_TOKEN",
+    "GITHUB_TOKEN",
+    "GITHUB_APP_ID",
+    "GITHUB_PRIVATE_KEY",
+    "PGHOST",
+    "PGPORT",
+    "PGDATABASE",
+    "PGUSER",
+    "PGPASSWORD",
+    "PGSSLMODE",
+    "OPENAI_API_KEY",
+    "OPENAI_EMBEDDING_MODEL",
+    "OPENAI_EMBEDDING_DIMENSIONS"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

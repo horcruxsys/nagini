@@ -1,12 +1,12 @@
 {
-  "name": "@horcruxsys/nagini/connectors",
+  "name": "@horcruxsys/nagini/config",
   "private": true,
-  "main": "./dist/connectors/src/index.js",
-  "types": "./dist/connectors/src/index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/connectors/src/index.d.ts",
-      "default": "./dist/connectors/src/index.js"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
   },
   "scripts": {
@@ -15,9 +15,7 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@horcruxsys/nagini/config": "workspace:*",
-    "@horcruxsys/nagini/domain": "workspace:*",
-    "@octokit/rest": "^22.0.0"
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@horcruxsys/nagini/eslint-config": "workspace:*",

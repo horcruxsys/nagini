@@ -6,10 +6,12 @@
     "baseUrl": ".",
     "paths": {
       "@horcruxsys/nagini/agents": ["../../packages/agents/src/index.ts"],
+      "@horcruxsys/nagini/config": ["../../packages/config/src/index.ts"],
       "@horcruxsys/nagini/connectors": ["../../packages/connectors/src/index.ts"],
       "@horcruxsys/nagini/domain": ["../../packages/domain/src/index.ts"],
       "@horcruxsys/nagini/execution": ["../../packages/execution/src/index.ts"],
       "@horcruxsys/nagini/knowledge": ["../../packages/knowledge/src/index.ts"],
+      "@horcruxsys/nagini/persistence": ["../../packages/persistence/src/index.ts"],
       "@horcruxsys/nagini/workflows": ["../../packages/workflows/src/index.ts"]
     }
   },
