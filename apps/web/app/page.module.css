@@ -237,8 +237,20 @@
   gap: 10px;
 }
 
+.timeline li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timeline li strong,
 .signalList strong {
   color: #173250;
+  text-transform: capitalize;
+}
+
+.timeline li span {
+  line-height: 1.55;
 }
 
 .metricsRow,
@@ -270,6 +282,18 @@
 
 .metricCard span {
   color: rgba(23, 50, 80, 0.72);
+}
+
+.metricCard[data-tone="positive"] {
+  border-color: rgba(34, 128, 84, 0.2);
+}
+
+.metricCard[data-tone="warning"] {
+  border-color: rgba(189, 124, 30, 0.26);
+}
+
+.metricCard[data-tone="neutral"] {
+  border-color: rgba(36, 74, 117, 0.12);
 }
 
 .sectionBlock {

@@ -1,13 +1,8 @@
 import Link from "next/link";
 
 import { Button } from "@horcruxsys/nagini/ui/button";
+import { getDashboardData } from "../lib/orchestrator";
 import styles from "./page.module.css";
-
-const trustMetrics = [
-  { label: "Connected projects", value: "124", note: "+18 this week" },
-  { label: "Weekly automations", value: "2.8k", note: "92% validated" },
-  { label: "Consumer reach", value: "1M+", note: "global scale ready" },
-];
 
 const pillars = [
   {
@@ -27,19 +22,12 @@ const pillars = [
   },
 ];
 
-const activityFeed = [
-  "Ticket parsed from Jira with acceptance criteria and linked pages.",
-  "Hybrid retrieval ranked design guidance and impacted repo areas.",
-  "Execution validated lint and type-check before marking complete.",
-];
+export default async function Home() {
+  const dashboard = await getDashboardData();
+  const systemReady = dashboard.providerHealth.every(
+    (provider) => provider.status === "ready",
+  );
 
-const launchTracks = [
-  "Pilot with one product team and approval-on-write enabled.",
-  "Expand retrieval freshness and PR automation for shared services.",
-  "Open the consumer surface to large-scale self-serve project onboarding.",
-];
-
-export default function Home() {
   return (
     <div className={styles.page}>
       <main className={styles.main}>
@@ -49,7 +37,9 @@ export default function Home() {
             <span className={styles.chromeDot} />
             <span className={styles.chromeDot} />
             <p>Nagini Control Center</p>
-            <span className={styles.statusPill}>All systems ready</span>
+            <span className={styles.statusPill}>
+              {systemReady ? "All systems ready" : "Attention needed"}
+            </span>
           </div>
 
           <div className={styles.heroGrid}>
@@ -84,7 +74,12 @@ export default function Home() {
             <aside className={styles.commandPanel}>
               <div className={styles.panelHeader}>
                 <strong>Run composer</strong>
-                <span>Latency target: &lt; 250ms p95</span>
+                <span>
+                  Updated {new Date(dashboard.generatedAt).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
               </div>
 
               <div className={styles.segmentedControl}>
@@ -101,26 +96,22 @@ export default function Home() {
               </div>
 
               <ul className={styles.signalList}>
-                <li>
-                  <strong>Jira</strong>
-                  <span>Ticket understood</span>
-                </li>
-                <li>
-                  <strong>Confluence</strong>
-                  <span>2 cited pages found</span>
-                </li>
-                <li>
-                  <strong>Validation</strong>
-                  <span>Real lint + type-check enabled</span>
-                </li>
+                {dashboard.providerHealth.map((provider) => (
+                  <li key={provider.provider}>
+                    <strong>{provider.provider}</strong>
+                    <span>
+                      {provider.status === "ready" ? "Ready" : "Degraded"} · {provider.message}
+                    </span>
+                  </li>
+                ))}
               </ul>
             </aside>
           </div>
         </section>
 
         <section className={styles.metricsRow}>
-          {trustMetrics.map((metric) => (
-            <article key={metric.label} className={styles.metricCard}>
+          {dashboard.metrics.map((metric) => (
+            <article key={metric.id} className={styles.metricCard} data-tone={metric.tone}>
               <p>{metric.label}</p>
               <strong>{metric.value}</strong>
               <span>{metric.note}</span>
@@ -151,8 +142,11 @@ export default function Home() {
               <span className={styles.panelBadge}>Realtime feel</span>
             </div>
             <ol className={styles.timeline}>
-              {activityFeed.map((step) => (
-                <li key={step}>{step}</li>
+              {dashboard.recentActivity.map((step) => (
+                <li key={step.id}>
+                  <strong>{step.title}</strong>
+                  <span>{step.detail}</span>
+                </li>
               ))}
             </ol>
           </article>
@@ -163,7 +157,7 @@ export default function Home() {
               <span className={styles.panelBadge}>1M-user path</span>
             </div>
             <ul className={styles.trackList}>
-              {launchTracks.map((track) => (
+              {dashboard.launchTracks.map((track) => (
                 <li key={track}>{track}</li>
               ))}
             </ul>

@@ -23,6 +23,11 @@ export function buildServer() {
     knowledgeMode: "hybrid",
   }));
 
+  app.get("/api/dashboard", async (_request, reply) => {
+    reply.header("Cache-Control", "public, max-age=15, stale-while-revalidate=60");
+    return workflowService.getDashboardSummary();
+  });
+
   app.get("/api/runs", async () => ({
     items: await workflowService.listRuns(),
   }));

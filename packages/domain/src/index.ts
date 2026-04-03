@@ -212,3 +212,34 @@ export interface ScoredChunk {
   score: number;
   source: "bm25" | "vector" | "hybrid";
 }
+
+export interface DashboardMetric {
+  id: string;
+  label: string;
+  value: string;
+  note: string;
+  tone: "positive" | "neutral" | "warning";
+}
+
+export interface DashboardProviderHealth {
+  provider: "github" | "jira" | "confluence";
+  status: "ready" | "degraded";
+  message: string;
+  lastCheckedAt: string;
+}
+
+export interface DashboardActivityItem {
+  id: string;
+  title: string;
+  detail: string;
+  timestamp: string;
+  status: "completed" | "in_progress" | "attention";
+}
+
+export interface DashboardSummary {
+  generatedAt: string;
+  metrics: DashboardMetric[];
+  providerHealth: DashboardProviderHealth[];
+  recentActivity: DashboardActivityItem[];
+  launchTracks: string[];
+}
