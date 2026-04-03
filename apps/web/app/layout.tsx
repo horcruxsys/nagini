@@ -12,9 +12,9 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Nagini AI Orchestrator",
+  title: "Nagini Control Center",
   description:
-    "Grounded multi-agent software delivery orchestrator for Jira, Confluence, and GitHub MCP.",
+    "Consumer-scale, iOS6-inspired orchestration UX for Jira, Confluence, and GitHub-powered software delivery.",
 };
 
 export default function RootLayout({

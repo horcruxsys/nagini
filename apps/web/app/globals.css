@@ -1,11 +1,11 @@
 :root {
-  --background: #ffffff;
+  --background: #dfeaf6;
   --foreground: #171717;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #0f1722;
     --foreground: #ededed;
   }
 }
@@ -18,7 +18,12 @@ body {
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.75), transparent 0, transparent 42%),
+    linear-gradient(180deg, #eef5fc 0%, #dbe8f5 36%, #c9dced 100%);
+  font-family: var(--font-geist-sans), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
@@ -41,9 +46,16 @@ a {
     color-scheme: dark;
   }
 
+  body {
+    background:
+      radial-gradient(circle at top, rgba(58, 84, 120, 0.3), transparent 0, transparent 42%),
+      linear-gradient(180deg, #162232 0%, #101827 40%, #0a1018 100%);
+  }
+
   .imgLight {
     display: none;
   }
+
   .imgDark {
     display: unset;
   }
