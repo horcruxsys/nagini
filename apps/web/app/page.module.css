@@ -114,6 +114,7 @@
   font-size: 0.95rem;
   font-weight: 700;
   transition: transform 120ms ease, filter 120ms ease;
+  text-align: center;
 }
 
 .primary {
@@ -127,6 +128,36 @@
   color: #1f4468;
   border: 1px solid rgba(36, 74, 117, 0.18);
   background: linear-gradient(180deg, #ffffff 0%, #dde7f3 100%);
+}
+
+.secondaryButton {
+  max-width: 340px;
+  white-space: normal;
+}
+
+.setupBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(36, 74, 117, 0.14);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(218, 231, 245, 0.92));
+}
+
+.bannerEyebrow {
+  margin: 0 0 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #476786;
+}
+
+.bannerText {
+  margin: 0;
+  color: rgba(23, 50, 80, 0.78);
 }
 
 .commandPanel {

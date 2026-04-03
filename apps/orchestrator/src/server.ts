@@ -26,6 +26,11 @@ export function buildServer() {
     knowledgeMode: "hybrid",
   }));
 
+  app.get("/api/setup/state", async (_request, reply) => {
+    reply.header("Cache-Control", "no-store");
+    return workflowService.getSetupState();
+  });
+
   app.get("/api/dashboard", async (_request, reply) => {
     reply.header(
       "Cache-Control",

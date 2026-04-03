@@ -81,6 +81,43 @@ export class LiveJiraConnector implements JiraConnector {
     };
   }
 
+  async listProjects(): Promise<
+    Array<{
+      id: string;
+      label: string;
+      description?: string;
+      url?: string;
+    }>
+  > {
+    return withRetry(async () => {
+      const response = await fetch(
+        `${this.baseUrl}/rest/api/3/project/search?maxResults=20`,
+        {
+          headers: this.headers,
+        },
+      );
+      await assertOk("jira", response);
+      const data = (await response.json()) as {
+        values?: Array<{
+          id?: string;
+          key?: string;
+          name?: string;
+          self?: string;
+          projectTypeKey?: string;
+        }>;
+      };
+
+      return (data.values ?? []).map((project) => ({
+        id: project.key ?? project.id ?? "unknown-project",
+        label: [project.key, project.name].filter(Boolean).join(" · "),
+        description: project.projectTypeKey
+          ? `Type: ${project.projectTypeKey}`
+          : undefined,
+        url: project.self,
+      }));
+    });
+  }
+
   async getIssueAsDocument(
     issueKey: string,
     projectId: string,

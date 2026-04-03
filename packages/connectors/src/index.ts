@@ -56,11 +56,15 @@ class StubJiraConnector implements JiraConnector {
     };
   }
 
+  async listProjects() {
+    return [];
+  }
+
   async getHealth(): Promise<ConnectorHealth> {
     return {
       provider: "jira",
-      status: "ready",
-      message: "Stub Jira connector (no credentials configured).",
+      status: "not_configured",
+      message: "Jira credentials are not configured yet.",
       lastCheckedAt: new Date().toISOString(),
     };
   }
@@ -82,11 +86,15 @@ class StubConfluenceConnector implements ConfluenceConnector {
     ];
   }
 
+  async listSpaces() {
+    return [];
+  }
+
   async getHealth(): Promise<ConnectorHealth> {
     return {
       provider: "confluence",
-      status: "ready",
-      message: "Stub Confluence connector (no credentials configured).",
+      status: "not_configured",
+      message: "Confluence credentials are not configured yet.",
       lastCheckedAt: new Date().toISOString(),
     };
   }
@@ -101,11 +109,15 @@ class StubGitHubConnector implements GitHubConnector {
     ];
   }
 
+  async listRepositories() {
+    return [];
+  }
+
   async getHealth(): Promise<ConnectorHealth> {
     return {
       provider: "github",
-      status: "ready",
-      message: "Stub GitHub connector (no credentials configured).",
+      status: "not_configured",
+      message: "GitHub credentials are not configured yet.",
       lastCheckedAt: new Date().toISOString(),
     };
   }

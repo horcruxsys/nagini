@@ -19,9 +19,7 @@ function humanize(value?: string): string {
   return value ? value.replaceAll("_", " ") : "unknown";
 }
 
-export default async function RunDetailPage({
-  params,
-}: RunDetailPageProps) {
+export default async function RunDetailPage({ params }: RunDetailPageProps) {
   const { runId } = await params;
   const detail = await getRunDetailData(runId);
 
@@ -94,7 +92,9 @@ export default async function RunDetailPage({
           <article className={styles.card}>
             <p className={styles.cardLabel}>Validation</p>
             <strong>{humanize(run.validation?.status ?? "pending")}</strong>
-            <span>{run.validation?.summary ?? "Validation has not started yet."}</span>
+            <span>
+              {run.validation?.summary ?? "Validation has not started yet."}
+            </span>
           </article>
 
           <article className={styles.card}>
@@ -113,7 +113,9 @@ export default async function RunDetailPage({
             <article className={styles.panel}>
               <div className={styles.panelHeader}>
                 <h2>Timeline</h2>
-                <span className={styles.panelPill}>{timeline.length} events</span>
+                <span className={styles.panelPill}>
+                  {timeline.length} events
+                </span>
               </div>
 
               <ol className={styles.timelineList}>
@@ -166,7 +168,9 @@ export default async function RunDetailPage({
                   </ul>
                 </div>
               ) : (
-                <p className={styles.emptyState}>No plan is available for this run yet.</p>
+                <p className={styles.emptyState}>
+                  No plan is available for this run yet.
+                </p>
               )}
             </article>
 
@@ -212,10 +216,14 @@ export default async function RunDetailPage({
                 <p className={styles.decisionNote}>
                   <strong>{latestDecision.reviewer}</strong> marked this run as{" "}
                   <strong>{humanize(run.approval?.status)}</strong>
-                  {latestDecision.comment ? ` — ${latestDecision.comment}` : "."}
+                  {latestDecision.comment
+                    ? ` — ${latestDecision.comment}`
+                    : "."}
                 </p>
               ) : (
-                <p className={styles.emptyState}>No approval action has been recorded yet.</p>
+                <p className={styles.emptyState}>
+                  No approval action has been recorded yet.
+                </p>
               )}
             </article>
           </div>
@@ -231,7 +239,9 @@ export default async function RunDetailPage({
 
               {run.contextPack ? (
                 <div className={styles.stack}>
-                  <p className={styles.supportingText}>{run.contextPack.summary}</p>
+                  <p className={styles.supportingText}>
+                    {run.contextPack.summary}
+                  </p>
 
                   <div>
                     <p className={styles.listTitle}>Requirements</p>
@@ -260,10 +270,16 @@ export default async function RunDetailPage({
                         <li key={citation.id} className={styles.citationItem}>
                           <div className={styles.citationHeader}>
                             <strong>{citation.title}</strong>
-                            <span className={styles.sourceTag}>{citation.source}</span>
+                            <span className={styles.sourceTag}>
+                              {citation.source}
+                            </span>
                           </div>
                           <p>{citation.snippet}</p>
-                          <a href={citation.url} target="_blank" rel="noopener noreferrer">
+                          <a
+                            href={citation.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
                             Open source ↗
                           </a>
                         </li>
@@ -272,7 +288,9 @@ export default async function RunDetailPage({
                   </div>
                 </div>
               ) : (
-                <p className={styles.emptyState}>Context evidence is not available for this run.</p>
+                <p className={styles.emptyState}>
+                  Context evidence is not available for this run.
+                </p>
               )}
             </article>
 
@@ -290,28 +308,37 @@ export default async function RunDetailPage({
               {run.validation?.commands.length ? (
                 <div className={styles.commandStack}>
                   {run.validation.commands.map((command) => (
-                    <article key={`${command.label}-${command.command}`} className={styles.commandCard}>
+                    <article
+                      key={`${command.label}-${command.command}`}
+                      className={styles.commandCard}
+                    >
                       <div className={styles.commandHeader}>
                         <strong>{command.label}</strong>
                         <span
                           className={styles.statusBadge}
-                          data-status={command.exitCode === 0 ? "completed" : "failed"}
+                          data-status={
+                            command.exitCode === 0 ? "completed" : "failed"
+                          }
                         >
                           exit {command.exitCode}
                         </span>
                       </div>
                       <p className={styles.commandMeta}>
-                        <code>{command.command}</code> · {(command.durationMs / 1000).toFixed(1)}s
+                        <code>{command.command}</code> ·{" "}
+                        {(command.durationMs / 1000).toFixed(1)}s
                       </p>
                       <pre className={styles.commandOutput}>
-                        {command.stdout || command.stderr || "No output captured."}
+                        {command.stdout ||
+                          command.stderr ||
+                          "No output captured."}
                       </pre>
                     </article>
                   ))}
                 </div>
               ) : (
                 <p className={styles.emptyState}>
-                  {run.validation?.summary ?? "Validation output will appear here after execution."}
+                  {run.validation?.summary ??
+                    "Validation output will appear here after execution."}
                 </p>
               )}
             </article>

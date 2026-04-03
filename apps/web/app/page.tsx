@@ -1,15 +1,18 @@
 import Link from "next/link";
 
-import { Button } from "@horcruxsys/nagini/ui/button";
 import { approveRunAction, rejectRunAction } from "./actions";
-import { getDashboardData } from "../lib/orchestrator";
+import {
+  getDashboardData,
+  getOrchestratorBaseUrl,
+  getSetupState,
+} from "../lib/orchestrator";
 import styles from "./page.module.css";
 
 const pillars = [
   {
     title: "Fast-first orchestration",
     description:
-      "Users can move from a command like `implement CDX-739` to a cited plan in seconds, without cognitive overload.",
+      "Users can move from a command like `implement <issue-key>` to a cited plan in seconds, without cognitive overload.",
   },
   {
     title: "Trust by design",
@@ -24,10 +27,18 @@ const pillars = [
 ];
 
 export default async function Home() {
-  const dashboard = await getDashboardData();
-  const systemReady = dashboard.providerHealth.every(
-    (provider) => provider.status === "ready",
-  );
+  const [dashboard, setup] = await Promise.all([
+    getDashboardData(),
+    getSetupState(),
+  ]);
+  const systemReady =
+    setup.ready &&
+    dashboard.providerHealth.every((provider) => provider.status === "ready");
+  const suggestedCommand =
+    dashboard.approvalQueue[0]?.issueKey != null
+      ? `implement ${dashboard.approvalQueue[0].issueKey}`
+      : setup.recommended.issueKeyTemplate;
+  const healthUrl = `${getOrchestratorBaseUrl()}/health`;
 
   return (
     <div className={styles.page}>
@@ -39,38 +50,42 @@ export default async function Home() {
             <span className={styles.chromeDot} />
             <p>Nagini Control Center</p>
             <span className={styles.statusPill}>
-              {systemReady ? "All systems ready" : "Attention needed"}
+              {systemReady
+                ? "Live connectors ready"
+                : `${setup.completedCount}/${setup.totalCount} connectors connected`}
             </span>
           </div>
 
           <div className={styles.heroGrid}>
             <div className={styles.heroCopy}>
-              <span className={styles.badge}>iOS6-inspired orchestration</span>
+              <span className={styles.badge}>
+                Paperclip-inspired onboarding
+              </span>
               <h1>
-                Clean AI delivery UX for enterprise teams and 1M consumers.
+                Connect real tools first, then watch the live agent cockpit.
               </h1>
               <p className={styles.lead}>
-                This next phase brings a polished, high-trust interface to the
-                orchestrator: faster onboarding, clearer approvals, and a
-                consumer-grade experience for Jira, Confluence, and GitHub-led
-                delivery.
+                The product now guides teams through connector setup, approval
+                rules, and launch readiness before handing off to the real
+                dashboard where agent activity, validation, and approvals are
+                visible in one place.
               </p>
 
               <div className={styles.ctas}>
+                <Link className={styles.primary} href="/onboarding">
+                  {setup.ready ? "Manage connectors" : "Start onboarding"}
+                </Link>
                 <a
-                  className={styles.primary}
-                  href="http://127.0.0.1:4001/health"
+                  className={styles.secondaryLink}
+                  href={healthUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Open live orchestrator
+                  Check orchestrator health
                 </a>
-                <Link className={styles.secondaryLink} href="/onboarding">
-                  View onboarding flow
-                </Link>
-                <Button appName="web" className={styles.secondaryButton}>
-                  Preview interaction
-                </Button>
+                <span className={styles.secondaryButton}>
+                  {setup.nextAction}
+                </span>
               </div>
             </div>
 
@@ -95,7 +110,7 @@ export default async function Home() {
               <div className={styles.commandBox}>
                 <label htmlFor="command">Command</label>
                 <div id="command" className={styles.commandInput}>
-                  implement CDX-739
+                  {suggestedCommand}
                 </div>
               </div>
 
@@ -104,7 +119,11 @@ export default async function Home() {
                   <li key={provider.provider}>
                     <strong>{provider.provider}</strong>
                     <span>
-                      {provider.status === "ready" ? "Ready" : "Degraded"} ·{" "}
+                      {(provider.status === "ready"
+                        ? "Ready"
+                        : provider.status === "not_configured"
+                          ? "Setup needed"
+                          : "Degraded") + " · "}
                       {provider.message}
                     </span>
                   </li>
@@ -113,6 +132,21 @@ export default async function Home() {
             </aside>
           </div>
         </section>
+
+        {!setup.ready ? (
+          <section className={styles.setupBanner}>
+            <div>
+              <p className={styles.bannerEyebrow}>Onboarding progress</p>
+              <h2>
+                {setup.completedCount}/{setup.totalCount} connectors are ready
+              </h2>
+              <p className={styles.bannerText}>{setup.nextAction}</p>
+            </div>
+            <Link className={styles.primary} href="/onboarding">
+              Continue setup
+            </Link>
+          </section>
+        ) : null}
 
         <section className={styles.metricsRow}>
           {dashboard.metrics.map((metric) => (
@@ -147,8 +181,8 @@ export default async function Home() {
         <section className={styles.twoColumn}>
           <article className={styles.infoPanel}>
             <div className={styles.panelTitleRow}>
-              <h2>Live activity</h2>
-              <span className={styles.panelBadge}>Realtime feel</span>
+              <h2>Live agent activity</h2>
+              <span className={styles.panelBadge}>Real orchestration</span>
             </div>
             <ol className={styles.timeline}>
               {dashboard.recentActivity.map((step) => (
@@ -158,7 +192,10 @@ export default async function Home() {
                   <div className={styles.timelineFooter}>
                     <time>{new Date(step.timestamp).toLocaleString()}</time>
                     {!step.id.startsWith("fallback-") ? (
-                      <Link className={styles.detailLink} href={`/runs/${step.id}`}>
+                      <Link
+                        className={styles.detailLink}
+                        href={`/runs/${step.id}`}
+                      >
                         Open run details
                       </Link>
                     ) : null}
@@ -200,7 +237,10 @@ export default async function Home() {
                     <span>{item.summary}</span>
                     <div className={styles.cardFooter}>
                       <time>{new Date(item.requestedAt).toLocaleString()}</time>
-                      <Link className={styles.detailLink} href={`/runs/${item.runId}`}>
+                      <Link
+                        className={styles.detailLink}
+                        href={`/runs/${item.runId}`}
+                      >
                         View details
                       </Link>
                     </div>
@@ -211,7 +251,7 @@ export default async function Home() {
                         <input
                           type="hidden"
                           name="reviewer"
-                          value="ui.operator"
+                          value={setup.recommended.reviewer}
                         />
                         <input
                           className={styles.commentInput}

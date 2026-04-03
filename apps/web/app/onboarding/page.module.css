@@ -4,7 +4,7 @@
 }
 
 .shell {
-  width: min(980px, 100%);
+  width: min(1160px, 100%);
   margin: 0 auto;
   border-radius: 24px;
   border: 1px solid rgba(28, 59, 94, 0.14);
@@ -20,7 +20,9 @@
   margin-bottom: 18px;
 }
 
-.badge {
+.badge,
+.statusTag,
+.eyebrow {
   width: fit-content;
   border-radius: 999px;
   padding: 6px 10px;
@@ -38,27 +40,80 @@
   line-height: 1.05;
 }
 
-.header p {
+.header p,
+.progressHero p,
+.message,
+.emptyState span,
+.sideCard p {
   margin: 0;
-  max-width: 720px;
+  max-width: 760px;
   line-height: 1.7;
   color: rgba(18, 45, 73, 0.8);
 }
 
-.grid {
+.progressHero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(28, 59, 94, 0.12);
+}
+
+.progressHero h2,
+.connectorCard h2,
+.sideCard h3 {
+  margin: 6px 0;
+  color: #173250;
+}
+
+.progressCard {
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  padding: 16px;
+  background: linear-gradient(180deg, #5caafc 0%, #1a6fc8 100%);
+  color: white;
+}
+
+.progressValue {
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.layout {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 18px;
+}
+
+.connectorColumn {
+  display: flex;
+  flex-direction: column;
   gap: 14px;
 }
 
-.card {
+.connectorCard,
+.sideCard {
   border-radius: 18px;
   padding: 18px;
   border: 1px solid rgba(28, 59, 94, 0.12);
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.72);
 }
 
-.card span {
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.stepIndex {
   display: inline-flex;
   width: 36px;
   height: 36px;
@@ -68,21 +123,106 @@
   background: linear-gradient(180deg, #5caafc 0%, #1a6fc8 100%);
   color: white;
   font-weight: 800;
-  margin-bottom: 12px;
+  flex-shrink: 0;
 }
 
-.card h2 {
+.cardHeader > div {
+  flex: 1;
+}
+
+.cardHeader p {
   margin: 0;
-  font-size: 1rem;
-  line-height: 1.6;
+  color: rgba(23, 50, 80, 0.72);
+}
+
+.statusTag[data-status="ready"] {
+  color: #18643f;
+  border-color: rgba(34, 128, 84, 0.22);
+}
+
+.statusTag[data-status="degraded"] {
+  color: #8a2a2a;
+  border-color: rgba(170, 59, 59, 0.22);
+}
+
+.statusTag[data-status="not_configured"] {
+  color: #8b5d12;
+  border-color: rgba(189, 124, 30, 0.22);
+}
+
+.resourceList,
+.policyList,
+.checkList {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.resourceItem,
+.policyList li,
+.checkList li,
+.emptyState {
+  border-radius: 14px;
+  padding: 12px 13px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(28, 59, 94, 0.1);
+}
+
+.resourceItem,
+.emptyState,
+.policyList li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resourceItem strong,
+.policyList strong,
+.emptyState strong {
   color: #173250;
+}
+
+.resourceItem span,
+.policyList span {
+  color: rgba(23, 50, 80, 0.76);
+}
+
+.resourceItem a,
+.actions a {
+  width: fit-content;
+  color: #1d5ea5;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.resourceItem a:hover,
+.actions a:hover {
+  text-decoration: underline;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.codeBlock {
+  margin: 8px 0 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(14, 27, 43, 0.94);
+  color: #e5f1ff;
+  overflow-x: auto;
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 20px;
+  margin-top: 2px;
 }
 
 .actions a {
@@ -94,13 +234,14 @@
   border-radius: 999px;
   border: 1px solid rgba(28, 59, 94, 0.14);
   background: linear-gradient(180deg, #ffffff 0%, #dce7f4 100%);
-  color: #214467;
-  font-weight: 700;
 }
 
-@media (max-width: 860px) {
-  .grid {
+@media (max-width: 900px) {
+  .layout,
+  .progressHero {
     grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 
@@ -111,16 +252,39 @@
   }
 
   .badge,
-  .card,
-  .actions a {
+  .statusTag,
+  .eyebrow,
+  .connectorCard,
+  .sideCard,
+  .resourceItem,
+  .policyList li,
+  .checkList li,
+  .emptyState,
+  .actions a,
+  .progressHero {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(143, 177, 219, 0.18);
     color: #edf4ff;
   }
 
   .header h1,
-  .card h2,
-  .header p {
+  .progressHero h2,
+  .connectorCard h2,
+  .sideCard h3,
+  .resourceItem strong,
+  .policyList strong,
+  .emptyState strong {
     color: #edf4ff;
+  }
+
+  .header p,
+  .progressHero p,
+  .message,
+  .emptyState span,
+  .resourceItem span,
+  .policyList span,
+  .cardHeader p,
+  .sideCard p {
+    color: rgba(237, 244, 255, 0.84);
   }
 }

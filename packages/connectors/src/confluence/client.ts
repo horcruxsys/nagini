@@ -49,6 +49,43 @@ export class LiveConfluenceConnector implements ConfluenceConnector {
     });
   }
 
+  async listSpaces(): Promise<
+    Array<{
+      id: string;
+      label: string;
+      description?: string;
+      url?: string;
+    }>
+  > {
+    return withRetry(async () => {
+      const response = await fetch(
+        `${this.baseUrl}/wiki/rest/api/space?limit=20`,
+        {
+          headers: this.headers,
+        },
+      );
+      await assertOk("confluence", response);
+      const data = (await response.json()) as {
+        results?: Array<{
+          id?: string | number;
+          key?: string;
+          name?: string;
+          type?: string;
+          _links?: { webui?: string };
+        }>;
+      };
+
+      return (data.results ?? []).map((space) => ({
+        id: String(space.key ?? space.id ?? "unknown-space"),
+        label: [space.key, space.name].filter(Boolean).join(" · "),
+        description: space.type ? `Type: ${space.type}` : undefined,
+        url: space._links?.webui
+          ? `${this.baseUrl}${space._links.webui}`
+          : undefined,
+      }));
+    });
+  }
+
   async getPageAsDocument(
     pageId: string,
     projectId: string,

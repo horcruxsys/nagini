@@ -10,6 +10,7 @@ import type {
   DashboardActivityItem,
   DashboardSummary,
   RunEvent,
+  SetupStateSummary,
   RunRecord,
   RunRequest,
   SourceDocument,
@@ -35,6 +36,109 @@ export class OrchestratorWorkflowService {
 
   async getRun(runId: string): Promise<RunRecord | undefined> {
     return this.persistence.getRun(runId);
+  }
+
+  async getSetupState(): Promise<SetupStateSummary> {
+    const [runs, jiraHealth, confluenceHealth, githubHealth] =
+      await Promise.all([
+        this.persistence.listRuns(),
+        this.connectors.jira.getHealth(),
+        this.connectors.confluence.getHealth(),
+        this.connectors.github.getHealth(),
+      ]);
+
+    const connectorConfigs = {
+      jira: this.config.jira,
+      confluence: this.config.confluence,
+      github: this.config.github,
+    };
+    const requiredEnv = {
+      jira: ["JIRA_BASE_URL", "JIRA_EMAIL", "JIRA_API_TOKEN"],
+      confluence: [
+        "CONFLUENCE_BASE_URL",
+        "CONFLUENCE_EMAIL",
+        "CONFLUENCE_API_TOKEN",
+      ],
+      github: ["GITHUB_TOKEN"],
+    } as const;
+
+    const [jiraResources, confluenceResources, githubResources] =
+      await Promise.all([
+        jiraHealth.status === "ready"
+          ? (this.connectors.jira.listProjects?.().catch(() => []) ?? [])
+          : [],
+        confluenceHealth.status === "ready"
+          ? (this.connectors.confluence.listSpaces?.().catch(() => []) ?? [])
+          : [],
+        githubHealth.status === "ready"
+          ? (this.connectors.github.listRepositories?.().catch(() => []) ?? [])
+          : [],
+      ]);
+
+    const connectors: SetupStateSummary["connectors"] = [
+      {
+        provider: "jira",
+        label: "Jira",
+        configured: Boolean(connectorConfigs.jira),
+        status: jiraHealth.status,
+        message: jiraHealth.message,
+        resources: jiraResources.slice(0, 4),
+        requiredEnv: [...requiredEnv.jira],
+        missingEnv: requiredEnv.jira.filter((key) => !process.env[key]),
+      },
+      {
+        provider: "confluence",
+        label: "Confluence",
+        configured: Boolean(connectorConfigs.confluence),
+        status: confluenceHealth.status,
+        message: confluenceHealth.message,
+        resources: confluenceResources.slice(0, 4),
+        requiredEnv: [...requiredEnv.confluence],
+        missingEnv: requiredEnv.confluence.filter((key) => !process.env[key]),
+      },
+      {
+        provider: "github",
+        label: "GitHub",
+        configured: Boolean(connectorConfigs.github),
+        status: githubHealth.status,
+        message: githubHealth.message,
+        resources: githubResources.slice(0, 4),
+        requiredEnv: [...requiredEnv.github],
+        missingEnv: requiredEnv.github.filter((key) => !process.env[key]),
+      },
+    ];
+
+    const completedCount = connectors.filter(
+      (connector) => connector.status === "ready",
+    ).length;
+    const latestRun = runs[0];
+    const recommendedRepo = latestRun?.repo ?? githubResources[0]?.id;
+    const orchestratorBaseUrl =
+      process.env.ORCHESTRATOR_BASE_URL ??
+      `http://${process.env.HOST ?? "127.0.0.1"}:${process.env.PORT ?? "4000"}`;
+
+    return {
+      generatedAt: new Date().toISOString(),
+      ready: completedCount === connectors.length,
+      completedCount,
+      totalCount: connectors.length,
+      nextAction:
+        completedCount === connectors.length
+          ? "Launch the first real run and watch the agent timeline in the dashboard."
+          : "Copy .env.example to .env, add real connector credentials, and refresh this page.",
+      connectors,
+      recommended: {
+        issueKeyTemplate: latestRun?.issueKey
+          ? `implement ${latestRun.issueKey}`
+          : "implement <issue-key>",
+        reviewer:
+          process.env.NEXT_PUBLIC_DEFAULT_REVIEWER ??
+          process.env.DEFAULT_REVIEWER ??
+          "operator@example.com",
+        repo: recommendedRepo,
+        orchestratorBaseUrl,
+      },
+    };
   }
 
   async getDashboardSummary(): Promise<DashboardSummary> {

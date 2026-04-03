@@ -1,48 +1,173 @@
 import Link from "next/link";
 
+import { getOrchestratorBaseUrl, getSetupState } from "../../lib/orchestrator";
 import styles from "./page.module.css";
 
-const steps = [
-  "Connect Jira, Confluence, and GitHub with least-privilege access.",
-  "Pick approval rules, validation requirements, and rollout safeguards.",
-  "Launch a focused pilot before enabling self-serve product teams.",
-];
+const providerCopy = {
+  jira: "Understand real work items, priorities, and acceptance criteria.",
+  confluence:
+    "Ground plans in design rationale, ADRs, and product documentation.",
+  github: "Discover live repositories, impacted files, and execution targets.",
+} as const;
 
-const Page = () => {
+function statusLabel(status: "ready" | "degraded" | "not_configured") {
+  if (status === "ready") {
+    return "Connected";
+  }
+
+  if (status === "not_configured") {
+    return "Needs setup";
+  }
+
+  return "Attention needed";
+}
+
+export default async function Page() {
+  const setup = await getSetupState();
+  const healthUrl = `${getOrchestratorBaseUrl()}/health`;
+
   return (
     <main className={styles.page}>
       <section className={styles.shell}>
         <div className={styles.header}>
           <span className={styles.badge}>Guided setup</span>
-          <h1>Onboard teams in minutes, not meetings.</h1>
+          <h1>Connect your real tools, then enter the live agent cockpit.</h1>
           <p>
-            This flow is intentionally simple for large-scale adoption: clean
-            defaults, visible trust controls, and fast first success.
+            This onboarding flow replaces demo data with real connector checks,
+            discovered workspaces, and approval-first launch guidance.
           </p>
         </div>
 
-        <div className={styles.grid}>
-          {steps.map((step, index) => (
-            <article key={step} className={styles.card}>
-              <span>{`0${index + 1}`}</span>
-              <h2>{step}</h2>
-            </article>
-          ))}
-        </div>
+        <section className={styles.progressHero}>
+          <div>
+            <p className={styles.eyebrow}>Workspace readiness</p>
+            <h2>
+              {setup.completedCount}/{setup.totalCount} connectors connected
+            </h2>
+            <p>{setup.nextAction}</p>
+          </div>
+          <div className={styles.progressCard}>
+            <span className={styles.progressValue}>
+              {Math.round((setup.completedCount / setup.totalCount) * 100)}%
+            </span>
+            <span>completion</span>
+          </div>
+        </section>
 
-        <div className={styles.actions}>
-          <Link href="/">Back to control center</Link>
-          <a
-            href="http://127.0.0.1:4001/health"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Check live health
-          </a>
+        <div className={styles.layout}>
+          <div className={styles.connectorColumn}>
+            {setup.connectors.map((connector, index) => (
+              <article
+                key={connector.provider}
+                className={styles.connectorCard}
+              >
+                <div className={styles.cardHeader}>
+                  <span className={styles.stepIndex}>{`0${index + 1}`}</span>
+                  <div>
+                    <h2>{connector.label}</h2>
+                    <p>{providerCopy[connector.provider]}</p>
+                  </div>
+                  <span
+                    className={styles.statusTag}
+                    data-status={connector.status}
+                  >
+                    {statusLabel(connector.status)}
+                  </span>
+                </div>
+
+                <p className={styles.message}>{connector.message}</p>
+
+                {connector.resources.length > 0 ? (
+                  <ul className={styles.resourceList}>
+                    {connector.resources.map((resource) => (
+                      <li key={resource.id} className={styles.resourceItem}>
+                        <strong>{resource.label}</strong>
+                        {resource.description ? (
+                          <span>{resource.description}</span>
+                        ) : null}
+                        {resource.url ? (
+                          <a
+                            href={resource.url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Open ↗
+                          </a>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className={styles.emptyState}>
+                    <strong>No live resources discovered yet.</strong>
+                    <span>
+                      Missing env: {connector.missingEnv.join(", ") || "none"}
+                    </span>
+                  </div>
+                )}
+              </article>
+            ))}
+
+            <article className={styles.connectorCard}>
+              <div className={styles.cardHeader}>
+                <span className={styles.stepIndex}>04</span>
+                <div>
+                  <h2>Launch policy</h2>
+                  <p>
+                    Use approval-first defaults while the first teams onboard.
+                  </p>
+                </div>
+              </div>
+
+              <ul className={styles.policyList}>
+                <li>
+                  <strong>Suggested command</strong>
+                  <span>{setup.recommended.issueKeyTemplate}</span>
+                </li>
+                <li>
+                  <strong>Default reviewer</strong>
+                  <span>{setup.recommended.reviewer}</span>
+                </li>
+                <li>
+                  <strong>Recommended repo</strong>
+                  <span>
+                    {setup.recommended.repo ??
+                      "Will appear after GitHub discovery"}
+                  </span>
+                </li>
+              </ul>
+            </article>
+          </div>
+
+          <aside className={styles.sidebar}>
+            <article className={styles.sideCard}>
+              <p className={styles.eyebrow}>Quick start</p>
+              <h3>1. Copy the example env file</h3>
+              <pre className={styles.codeBlock}>cp .env.example .env</pre>
+              <p>
+                Add real Jira, Confluence, and GitHub credentials. The server
+                now reads <code>.env</code> automatically.
+              </p>
+            </article>
+
+            <article className={styles.sideCard}>
+              <p className={styles.eyebrow}>What happens next</p>
+              <ul className={styles.checkList}>
+                <li>Connector status turns green</li>
+                <li>Live projects, spaces, and repos appear</li>
+                <li>The dashboard begins showing real agent activity</li>
+              </ul>
+            </article>
+
+            <div className={styles.actions}>
+              <Link href="/">Open control center</Link>
+              <a href={healthUrl} target="_blank" rel="noreferrer">
+                Check live health
+              </a>
+            </div>
+          </aside>
         </div>
       </section>
     </main>
   );
-};
-
-export default Page;
+}

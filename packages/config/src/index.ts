@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+
 import { z } from "zod";
 
 const JiraConfigSchema = z.object({
@@ -48,7 +51,63 @@ export type PostgresConfig = z.infer<typeof PostgresConfigSchema>;
 export type OpenAIConfig = z.infer<typeof OpenAIConfigSchema>;
 export type AppConfig = z.infer<typeof AppConfigSchema>;
 
+let envLoaded = false;
+
+function loadEnvFilesOnce(): void {
+  if (envLoaded) {
+    return;
+  }
+
+  envLoaded = true;
+
+  const searchRoots = [
+    process.cwd(),
+    path.resolve(process.cwd(), ".."),
+    path.resolve(process.cwd(), "../.."),
+  ];
+  const envFiles = [".env.local", ".env"];
+
+  for (const root of searchRoots) {
+    for (const fileName of envFiles) {
+      const filePath = path.join(root, fileName);
+
+      if (!existsSync(filePath)) {
+        continue;
+      }
+
+      const fileContent = readFileSync(filePath, "utf-8");
+      for (const rawLine of fileContent.split(/\r?\n/)) {
+        const line = rawLine.trim();
+        if (!line || line.startsWith("#")) {
+          continue;
+        }
+
+        const equalsIndex = line.indexOf("=");
+        if (equalsIndex <= 0) {
+          continue;
+        }
+
+        const key = line.slice(0, equalsIndex).trim();
+        if (!key || process.env[key] !== undefined) {
+          continue;
+        }
+
+        let value = line.slice(equalsIndex + 1).trim();
+        if (
+          (value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))
+        ) {
+          value = value.slice(1, -1);
+        }
+
+        process.env[key] = value.replace(/\\n/g, "\n");
+      }
+    }
+  }
+}
+
 function requiredEnv(key: string): string {
+  loadEnvFilesOnce();
   const value = process.env[key];
   if (!value) {
     throw new Error(`Missing required environment variable: ${key}`);
@@ -57,10 +116,12 @@ function requiredEnv(key: string): string {
 }
 
 function optionalEnv(key: string, fallback?: string): string | undefined {
+  loadEnvFilesOnce();
   return process.env[key] ?? fallback;
 }
 
 export function loadConfig(): AppConfig {
+  loadEnvFilesOnce();
   const raw = {
     jira: {
       baseUrl: requiredEnv("JIRA_BASE_URL"),
@@ -103,6 +164,7 @@ export function loadConfig(): AppConfig {
  * whose env vars are missing instead of throwing.
  */
 export function loadPartialConfig(): Partial<AppConfig> {
+  loadEnvFilesOnce();
   const result: Partial<AppConfig> = {};
 
   try {

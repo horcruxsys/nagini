@@ -114,7 +114,7 @@ type DashboardMetric = {
 
 type DashboardProviderHealth = {
   provider: "github" | "jira" | "confluence";
-  status: "ready" | "degraded";
+  status: "ready" | "degraded" | "not_configured";
   message: string;
   lastCheckedAt: string;
 };
@@ -145,97 +145,165 @@ export type DashboardData = {
   launchTracks: string[];
 };
 
+export type SetupCatalogItem = {
+  id: string;
+  label: string;
+  description?: string;
+  url?: string;
+};
+
+export type SetupConnectorState = {
+  provider: "github" | "jira" | "confluence";
+  label: string;
+  configured: boolean;
+  status: "ready" | "degraded" | "not_configured";
+  message: string;
+  resources: SetupCatalogItem[];
+  requiredEnv: string[];
+  missingEnv: string[];
+};
+
+export type SetupState = {
+  generatedAt: string;
+  ready: boolean;
+  completedCount: number;
+  totalCount: number;
+  nextAction: string;
+  connectors: SetupConnectorState[];
+  recommended: {
+    issueKeyTemplate: string;
+    reviewer: string;
+    repo?: string;
+    orchestratorBaseUrl: string;
+  };
+};
+
 const fallbackDashboard: DashboardData = {
   generatedAt: new Date().toISOString(),
   metrics: [
     {
       id: "projects",
       label: "Connected projects",
-      value: "124",
-      note: "+18 this week",
-      tone: "positive",
+      value: "0",
+      note: "complete onboarding to populate live data",
+      tone: "neutral",
     },
     {
       id: "runs",
       label: "Weekly automations",
-      value: "2.8k",
-      note: "92% validated",
-      tone: "positive",
+      value: "0",
+      note: "no live runs yet",
+      tone: "neutral",
+    },
+    {
+      id: "approvals",
+      label: "Approval queue",
+      value: "0",
+      note: "approval requests will appear after the first run",
+      tone: "neutral",
     },
     {
       id: "validation",
       label: "Validation pass rate",
-      value: "99.2%",
-      note: "fast evidence loop",
-      tone: "positive",
-    },
-    {
-      id: "scale",
-      label: "Consumer readiness",
-      value: "1M+",
-      note: "global scale ready",
-      tone: "positive",
+      value: "—",
+      note: "connect tools and execute a real run to gather evidence",
+      tone: "neutral",
     },
   ],
   providerHealth: [
     {
       provider: "jira",
-      status: "ready",
-      message: "Ticket understood",
+      status: "not_configured",
+      message: "Jira is not configured yet.",
       lastCheckedAt: new Date().toISOString(),
     },
     {
       provider: "confluence",
-      status: "ready",
-      message: "2 cited pages found",
+      status: "not_configured",
+      message: "Confluence is not configured yet.",
       lastCheckedAt: new Date().toISOString(),
     },
     {
       provider: "github",
-      status: "ready",
-      message: "Repo ready for execution",
+      status: "not_configured",
+      message: "GitHub is not configured yet.",
       lastCheckedAt: new Date().toISOString(),
     },
   ],
   recentActivity: [
     {
-      id: "fallback-1",
-      title: "Ticket parsed from Jira",
+      id: "empty-state",
+      title: "Complete onboarding to unlock live activity",
       detail:
-        "Acceptance criteria and linked pages were successfully extracted.",
+        "Once Jira, Confluence, and GitHub are connected, this area will show the real agent timeline and evidence loop.",
       timestamp: new Date().toISOString(),
-      status: "completed",
-    },
-    {
-      id: "fallback-2",
-      title: "Hybrid retrieval ranked evidence",
-      detail: "Context was grounded with citations and impacted repo areas.",
-      timestamp: new Date().toISOString(),
-      status: "completed",
-    },
-    {
-      id: "fallback-3",
-      title: "Validation completed",
-      detail: "Lint and type-check evidence is ready for review.",
-      timestamp: new Date().toISOString(),
-      status: "completed",
+      status: "in_progress",
     },
   ],
-  approvalQueue: [
-    {
-      runId: "demo-approval",
-      issueKey: "CDX-739",
-      repo: "nagini",
-      requestedAt: new Date().toISOString(),
-      summary: "Awaiting approval to execute the implementation plan.",
-      status: "pending",
-    },
-  ],
+  approvalQueue: [],
   launchTracks: [
-    "Pilot with one product team and approval-on-write enabled.",
-    "Expand retrieval freshness and PR automation for shared services.",
-    "Open the consumer surface to large-scale self-serve project onboarding.",
+    "Connect real Jira, Confluence, and GitHub accounts.",
+    "Run the first approval-first implementation workflow.",
+    "Review the live agent timeline and validation evidence in the dashboard.",
   ],
+};
+
+const fallbackSetupState: SetupState = {
+  generatedAt: new Date().toISOString(),
+  ready: false,
+  completedCount: 0,
+  totalCount: 3,
+  nextAction:
+    "Copy .env.example to .env, add live credentials, and refresh to activate discovery.",
+  connectors: [
+    {
+      provider: "jira",
+      label: "Jira",
+      configured: false,
+      status: "not_configured",
+      message: "Jira credentials are not configured yet.",
+      resources: [],
+      requiredEnv: ["JIRA_BASE_URL", "JIRA_EMAIL", "JIRA_API_TOKEN"],
+      missingEnv: ["JIRA_BASE_URL", "JIRA_EMAIL", "JIRA_API_TOKEN"],
+    },
+    {
+      provider: "confluence",
+      label: "Confluence",
+      configured: false,
+      status: "not_configured",
+      message: "Confluence credentials are not configured yet.",
+      resources: [],
+      requiredEnv: [
+        "CONFLUENCE_BASE_URL",
+        "CONFLUENCE_EMAIL",
+        "CONFLUENCE_API_TOKEN",
+      ],
+      missingEnv: [
+        "CONFLUENCE_BASE_URL",
+        "CONFLUENCE_EMAIL",
+        "CONFLUENCE_API_TOKEN",
+      ],
+    },
+    {
+      provider: "github",
+      label: "GitHub",
+      configured: false,
+      status: "not_configured",
+      message: "GitHub credentials are not configured yet.",
+      resources: [],
+      requiredEnv: ["GITHUB_TOKEN"],
+      missingEnv: ["GITHUB_TOKEN"],
+    },
+  ],
+  recommended: {
+    issueKeyTemplate: "implement <issue-key>",
+    reviewer:
+      process.env.NEXT_PUBLIC_DEFAULT_REVIEWER ?? "operator@example.com",
+    orchestratorBaseUrl:
+      process.env.ORCHESTRATOR_BASE_URL ??
+      process.env.NEXT_PUBLIC_ORCHESTRATOR_URL ??
+      "http://127.0.0.1:4001",
+  },
 };
 
 export type RunDetailData = {
@@ -243,118 +311,7 @@ export type RunDetailData = {
   timeline: RunEvent[];
 };
 
-function buildFallbackRunDetail(runId: string): RunDetailData {
-  const now = new Date().toISOString();
-
-  return {
-    run: {
-      id: runId,
-      projectId: "demo-project",
-      issueKey: "CDX-739",
-      mode: "implement",
-      repo: "nagini",
-      baseBranch: "main",
-      status: "awaiting_approval",
-      summary: "Awaiting approval to execute a cited implementation plan for CDX-739.",
-      createdAt: now,
-      updatedAt: now,
-      contextPack: {
-        issueKey: "CDX-739",
-        summary:
-          "The orchestrator has gathered Jira intent, Confluence rationale, and repo impact signals for a safe implementation run.",
-        requirements: [
-          "Show citations and impacted areas before execution.",
-          "Capture a clear human approval decision for each implement run.",
-          "Present validation evidence in a consumer-friendly view.",
-        ],
-        assumptions: [
-          "The repo already contains the delivery orchestrator scaffold.",
-          "Human approval remains required before high-impact actions.",
-        ],
-        constraints: [
-          "All actions must stay auditable and citation-backed.",
-          "Validation evidence must be visible before completion claims.",
-        ],
-        impactedAreas: [
-          "apps/orchestrator/src/server.ts",
-          "packages/workflows/src/index.ts",
-          "apps/web/app/page.tsx",
-        ],
-        citations: [
-          {
-            id: "demo-citation-1",
-            source: "confluence",
-            title: "AI Delivery Orchestrator Overview",
-            url: "https://confluence.example.com/display/ENG/CDX-739",
-            snippet:
-              "Use Jira for intent, Confluence for design rationale, and GitHub repo context before execution.",
-            score: 0.96,
-            updatedAt: now,
-          },
-        ],
-        unresolvedQuestions: [
-          "Should the rollout keep approval required for all implement runs in production?",
-        ],
-      },
-      plan: {
-        summary:
-          "Deliver CDX-739 with a grounded execution plan, approval gate, and validation evidence loop.",
-        branchName: "feat/CDX-739-approval-first-run-details",
-        approvalRequired: true,
-        tasks: [
-          {
-            id: "task-1",
-            title: "Render run detail evidence",
-            reason: "Reviewers need full context, not only a queue summary.",
-            targetPaths: [
-              "apps/web/app/runs/[runId]/page.tsx",
-              "apps/web/lib/orchestrator.ts",
-            ],
-            testStrategy: [
-              "Verify the detail route renders timeline and citations.",
-              "Confirm approval actions revalidate the page.",
-            ],
-          },
-        ],
-        risks: [
-          "Authenticated reviewer identity is still pending future integration.",
-        ],
-      },
-      approval: {
-        required: true,
-        status: "pending",
-        requestedAt: now,
-        decisions: [],
-      },
-      validation: {
-        status: "pending",
-        simulated: false,
-        summary: "Execution is paused until an approver reviews the run.",
-        commands: [],
-      },
-    },
-    timeline: [
-      {
-        id: `${runId}-created`,
-        runId,
-        type: "run.created",
-        title: "Run accepted",
-        detail: "The command was accepted and context retrieval has started.",
-        createdAt: now,
-      },
-      {
-        id: `${runId}-approval`,
-        runId,
-        type: "run.approval_requested",
-        title: "Approval requested",
-        detail: "A reviewer must approve this run before execution begins.",
-        createdAt: now,
-      },
-    ],
-  };
-}
-
-function getBaseUrl(): string {
+export function getOrchestratorBaseUrl(): string {
   return (
     process.env.ORCHESTRATOR_BASE_URL ??
     process.env.NEXT_PUBLIC_ORCHESTRATOR_URL ??
@@ -362,12 +319,42 @@ function getBaseUrl(): string {
   );
 }
 
+export function getDefaultReviewer(): string {
+  return process.env.NEXT_PUBLIC_DEFAULT_REVIEWER ?? "operator@example.com";
+}
+
+export async function getSetupState(): Promise<SetupState> {
+  try {
+    const response = await fetch(
+      `${getOrchestratorBaseUrl()}/api/setup/state`,
+      {
+        next: { revalidate: 10 },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`Setup API returned ${response.status}`);
+    }
+
+    return (await response.json()) as SetupState;
+  } catch {
+    return {
+      ...fallbackSetupState,
+      recommended: {
+        ...fallbackSetupState.recommended,
+        reviewer: getDefaultReviewer(),
+        orchestratorBaseUrl: getOrchestratorBaseUrl(),
+      },
+    };
+  }
+}
+
 export async function getDashboardData(): Promise<DashboardData> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 1500);
 
   try {
-    const response = await fetch(`${getBaseUrl()}/api/dashboard`, {
+    const response = await fetch(`${getOrchestratorBaseUrl()}/api/dashboard`, {
       next: { revalidate: 15 },
       signal: controller.signal,
     });
@@ -389,16 +376,16 @@ export async function getRunDetailData(
 ): Promise<RunDetailData | null> {
   try {
     const [runResponse, timelineResponse] = await Promise.all([
-      fetch(`${getBaseUrl()}/api/runs/${runId}`, {
+      fetch(`${getOrchestratorBaseUrl()}/api/runs/${runId}`, {
         cache: "no-store",
       }),
-      fetch(`${getBaseUrl()}/api/runs/${runId}/timeline`, {
+      fetch(`${getOrchestratorBaseUrl()}/api/runs/${runId}/timeline`, {
         cache: "no-store",
       }),
     ]);
 
     if (runResponse.status === 404 || timelineResponse.status === 404) {
-      return runId === "demo-approval" ? buildFallbackRunDetail(runId) : null;
+      return null;
     }
 
     if (!runResponse.ok || !timelineResponse.ok) {
@@ -415,7 +402,7 @@ export async function getRunDetailData(
       timeline: timelinePayload.items ?? [],
     };
   } catch {
-    return runId === "demo-approval" ? buildFallbackRunDetail(runId) : null;
+    return null;
   }
 }
 
@@ -426,7 +413,7 @@ export async function submitApprovalDecision(input: {
   comment?: string;
 }): Promise<void> {
   const response = await fetch(
-    `${getBaseUrl()}/api/runs/${input.runId}/${input.decision}`,
+    `${getOrchestratorBaseUrl()}/api/runs/${input.runId}/${input.decision}`,
     {
       method: "POST",
       headers: {

@@ -248,9 +248,42 @@ export interface DashboardMetric {
 
 export interface DashboardProviderHealth {
   provider: "github" | "jira" | "confluence";
-  status: "ready" | "degraded";
+  status: "ready" | "degraded" | "not_configured";
   message: string;
   lastCheckedAt: string;
+}
+
+export interface SetupCatalogItem {
+  id: string;
+  label: string;
+  description?: string;
+  url?: string;
+}
+
+export interface SetupConnectorState {
+  provider: "github" | "jira" | "confluence";
+  label: string;
+  configured: boolean;
+  status: "ready" | "degraded" | "not_configured";
+  message: string;
+  resources: SetupCatalogItem[];
+  requiredEnv: string[];
+  missingEnv: string[];
+}
+
+export interface SetupStateSummary {
+  generatedAt: string;
+  ready: boolean;
+  completedCount: number;
+  totalCount: number;
+  nextAction: string;
+  connectors: SetupConnectorState[];
+  recommended: {
+    issueKeyTemplate: string;
+    reviewer: string;
+    repo?: string;
+    orchestratorBaseUrl: string;
+  };
 }
 
 export interface DashboardActivityItem {

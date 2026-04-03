@@ -33,6 +33,33 @@ export class LiveGitHubConnector implements GitHubConnector {
     return { owner: parts[0], repo: parts[1] };
   }
 
+  async listRepositories(): Promise<
+    Array<{
+      id: string;
+      label: string;
+      description?: string;
+      url?: string;
+    }>
+  > {
+    const octokit = await this.getOctokit();
+
+    return withRetry(async () => {
+      const { data } = await octokit.repos.listForAuthenticatedUser({
+        per_page: 20,
+        sort: "updated",
+      });
+
+      return data.map((repository) => ({
+        id: repository.full_name,
+        label: repository.full_name,
+        description: repository.private
+          ? "Private repository"
+          : "Public repository",
+        url: repository.html_url,
+      }));
+    });
+  }
+
   async findRelevantFiles(repo: string, issueKey: string): Promise<string[]> {
     const { owner, repo: repoName } = this.parseRepo(repo);
     const octokit = await this.getOctokit();
