@@ -1,3 +1,4 @@
+import cors from "@fastify/cors";
 import Fastify from "fastify";
 
 import {
@@ -11,6 +12,12 @@ import {
 
 export function buildServer() {
   const app = Fastify({ logger: true });
+
+  app.register(cors, {
+    origin: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  });
+
   const workflowService = new OrchestratorWorkflowService();
 
   app.get("/health", async () => ({
@@ -153,13 +160,48 @@ export function buildServer() {
       Connection: "keep-alive",
     });
 
-    for (const event of buildRunTimeline(run)) {
-      reply.raw.write(`event: ${event.type}\n`);
-      reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
+    let sentEventsCount = 0;
+    const streamEvents = (currentRun: any) => {
+      const events = buildRunTimeline(currentRun);
+      const newEvents = events.slice(sentEventsCount);
+      for (const event of newEvents) {
+        reply.raw.write(`event: ${event.type}\n`);
+        reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
+      }
+      sentEventsCount = events.length;
+    };
+
+    streamEvents(run);
+
+    const isTerminal = (status: string) => 
+      ["completed", "failed", "cancelled"].includes(status);
+
+    if (isTerminal(run.status)) {
+      reply.raw.end();
+      return reply;
     }
 
-    reply.raw.end();
-    return reply;
+    return new Promise((resolve) => {
+      const onRunChange = (updatedRun: any) => {
+        if (updatedRun.id === runId) {
+          streamEvents(updatedRun);
+          if (isTerminal(updatedRun.status)) {
+            cleanup();
+          }
+        }
+      };
+
+      const cleanup = () => {
+        workflowService.emitter.off("run:change", onRunChange);
+        if (!reply.raw.writableEnded) {
+          reply.raw.end();
+        }
+        resolve(reply);
+      };
+
+      workflowService.emitter.on("run:change", onRunChange);
+      request.raw.on("close", cleanup);
+    });
   });
 
   return app;

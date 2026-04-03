@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { EventEmitter } from "node:events";
 
-import { DeterministicPlanningAgent } from "@horcruxsys/nagini/agents";
+import { DeterministicPlanningAgent, LLMPlanningAgent } from "@horcruxsys/nagini/agents";
 import { loadPartialConfig } from "@horcruxsys/nagini/config";
 import { createConnectorBundle } from "@horcruxsys/nagini/connectors";
 import type {
@@ -27,8 +28,16 @@ export class OrchestratorWorkflowService {
   private readonly knowledgeService = new HybridKnowledgeService(
     this.persistence,
   );
-  private readonly planningAgent = new DeterministicPlanningAgent();
+  private readonly planningAgent = process.env.OPENAI_API_KEY
+    ? new LLMPlanningAgent()
+    : new DeterministicPlanningAgent();
   private readonly executionService = new LocalExecutionService();
+  public readonly emitter = new EventEmitter();
+
+  private async updateRun(run: RunRecord): Promise<void> {
+    await this.persistence.saveRun(run);
+    this.emitter.emit("run:change", run);
+  }
 
   async listRuns(): Promise<RunRecord[]> {
     return this.persistence.listRuns();
@@ -312,7 +321,26 @@ export class OrchestratorWorkflowService {
       },
     };
 
-    await this.persistence.saveRun(initialRun);
+    if (request.mode === "implement") {
+      const allReady = [
+        await this.connectors.jira.getHealth(),
+        await this.connectors.confluence.getHealth(),
+        await this.connectors.github.getHealth(),
+      ].every((health) => health.status === "ready");
+
+      if (!allReady) {
+        const failedRun: RunRecord = {
+          ...initialRun,
+          status: "failed",
+          updatedAt: new Date().toISOString(),
+          summary: "Implement mode requires all connectors to be fully configured and ready.",
+        };
+        await this.updateRun(failedRun);
+        throw new Error(failedRun.summary);
+      }
+    }
+
+    await this.updateRun(initialRun);
 
     try {
       const workItem = await this.connectors.jira.getWorkItem(request.issueKey);
@@ -368,7 +396,7 @@ export class OrchestratorWorkflowService {
           },
         };
 
-        await this.persistence.saveRun(awaitingRun);
+        await this.updateRun(awaitingRun);
         return awaitingRun;
       }
 
@@ -386,7 +414,7 @@ export class OrchestratorWorkflowService {
         validation,
       };
 
-      await this.persistence.saveRun(finalRun);
+      await this.updateRun(finalRun);
       return finalRun;
     } catch (error) {
       const failedRun: RunRecord = {
@@ -398,7 +426,7 @@ export class OrchestratorWorkflowService {
             ? `Run failed: ${error.message}`
             : "Run failed unexpectedly.",
       };
-      await this.persistence.saveRun(failedRun);
+      await this.updateRun(failedRun);
       throw error;
     }
   }
@@ -444,7 +472,7 @@ export class OrchestratorWorkflowService {
           decisions,
         },
       };
-      await this.persistence.saveRun(rejectedRun);
+      await this.updateRun(rejectedRun);
       return rejectedRun;
     }
 
@@ -470,7 +498,7 @@ export class OrchestratorWorkflowService {
         decisions,
       },
     };
-    await this.persistence.saveRun(approvedRun);
+    await this.updateRun(approvedRun);
     return approvedRun;
   }
 

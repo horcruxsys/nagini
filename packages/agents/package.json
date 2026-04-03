@@ -15,7 +15,10 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@horcruxsys/nagini/domain": "workspace:*"
+    "@ai-sdk/openai": "^3.0.50",
+    "@horcruxsys/nagini/domain": "workspace:*",
+    "ai": "^6.0.145",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@horcruxsys/nagini/eslint-config": "workspace:*",

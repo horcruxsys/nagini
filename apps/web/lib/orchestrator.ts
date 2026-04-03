@@ -74,16 +74,16 @@ export type RunRecord = {
   repo: string;
   baseBranch: string;
   status:
-    | "queued"
-    | "gathering_context"
-    | "planning"
-    | "awaiting_approval"
-    | "executing"
-    | "validating"
-    | "blocked"
-    | "failed"
-    | "completed"
-    | "cancelled";
+  | "queued"
+  | "gathering_context"
+  | "planning"
+  | "awaiting_approval"
+  | "executing"
+  | "validating"
+  | "blocked"
+  | "failed"
+  | "completed"
+  | "cancelled";
   summary: string;
   createdAt: string;
   updatedAt: string;
@@ -254,45 +254,41 @@ const fallbackSetupState: SetupState = {
   completedCount: 0,
   totalCount: 3,
   nextAction:
-    "Copy .env.example to .env, add live credentials, and refresh to activate discovery.",
+    "The web app could not connect to the orchestrator. Please ensure the backend is running and reachable.",
   connectors: [
     {
       provider: "jira",
       label: "Jira",
       configured: false,
       status: "not_configured",
-      message: "Jira credentials are not configured yet.",
+      message: "Orchestrator unreachable. Check connection settings.",
       resources: [],
       requiredEnv: ["JIRA_BASE_URL", "JIRA_EMAIL", "JIRA_API_TOKEN"],
-      missingEnv: ["JIRA_BASE_URL", "JIRA_EMAIL", "JIRA_API_TOKEN"],
+      missingEnv: [],
     },
     {
       provider: "confluence",
       label: "Confluence",
       configured: false,
       status: "not_configured",
-      message: "Confluence credentials are not configured yet.",
+      message: "Orchestrator unreachable. Check connection settings.",
       resources: [],
       requiredEnv: [
         "CONFLUENCE_BASE_URL",
         "CONFLUENCE_EMAIL",
         "CONFLUENCE_API_TOKEN",
       ],
-      missingEnv: [
-        "CONFLUENCE_BASE_URL",
-        "CONFLUENCE_EMAIL",
-        "CONFLUENCE_API_TOKEN",
-      ],
+      missingEnv: [],
     },
     {
       provider: "github",
       label: "GitHub",
       configured: false,
       status: "not_configured",
-      message: "GitHub credentials are not configured yet.",
+      message: "Orchestrator unreachable. Check connection settings.",
       resources: [],
       requiredEnv: ["GITHUB_TOKEN"],
-      missingEnv: ["GITHUB_TOKEN"],
+      missingEnv: [],
     },
   ],
   recommended: {
@@ -302,7 +298,7 @@ const fallbackSetupState: SetupState = {
     orchestratorBaseUrl:
       process.env.ORCHESTRATOR_BASE_URL ??
       process.env.NEXT_PUBLIC_ORCHESTRATOR_URL ??
-      "http://127.0.0.1:4001",
+      "http://127.0.0.1:4000",
   },
 };
 
@@ -315,7 +311,7 @@ export function getOrchestratorBaseUrl(): string {
   return (
     process.env.ORCHESTRATOR_BASE_URL ??
     process.env.NEXT_PUBLIC_ORCHESTRATOR_URL ??
-    "http://127.0.0.1:4001"
+    "http://127.0.0.1:4000"
   );
 }
 

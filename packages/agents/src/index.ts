@@ -15,6 +15,8 @@ export interface PlanningAgent {
   createPlan(contextPack: ContextPack): Promise<ImplementationPlan>;
 }
 
+export { LLMPlanningAgent } from "./llm-agent.js";
+
 export class DeterministicPlanningAgent implements PlanningAgent {
   async createPlan(contextPack: ContextPack): Promise<ImplementationPlan> {
     const branchName = `feat/${contextPack.issueKey}-${toSlug(contextPack.summary).slice(0, 40)}`;

@@ -84,6 +84,14 @@ export interface ImplementationPlanTask {
   testStrategy: string[];
 }
 
+export const ImplementationPlanTaskSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  reason: z.string(),
+  targetPaths: z.array(z.string()),
+  testStrategy: z.array(z.string()),
+});
+
 export interface ImplementationPlan {
   summary: string;
   branchName: string;
@@ -91,6 +99,14 @@ export interface ImplementationPlan {
   tasks: ImplementationPlanTask[];
   risks: string[];
 }
+
+export const ImplementationPlanSchema = z.object({
+  summary: z.string(),
+  branchName: z.string(),
+  approvalRequired: z.boolean(),
+  tasks: z.array(ImplementationPlanTaskSchema),
+  risks: z.array(z.string()),
+});
 
 export interface ValidationCommandResult {
   label: string;
