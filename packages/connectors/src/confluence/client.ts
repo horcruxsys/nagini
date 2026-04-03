@@ -93,9 +93,7 @@ export class LiveConfluenceConnector implements ConfluenceConnector {
         provider: "confluence",
         status: "degraded",
         message:
-          error instanceof Error
-            ? error.message
-            : "Unknown Confluence error.",
+          error instanceof Error ? error.message : "Unknown Confluence error.",
         lastCheckedAt: new Date().toISOString(),
       };
     }

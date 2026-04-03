@@ -26,6 +26,15 @@ export const RunRequestSchema = z.object({
 });
 export type RunRequest = z.infer<typeof RunRequestSchema>;
 
+export const ApprovalActionSchema = z.enum(["approved", "rejected"]);
+export type ApprovalAction = z.infer<typeof ApprovalActionSchema>;
+
+export const ApprovalDecisionInputSchema = z.object({
+  reviewer: z.string().min(1).default("operator"),
+  comment: z.string().trim().max(500).optional(),
+});
+export type ApprovalDecisionInput = z.infer<typeof ApprovalDecisionInputSchema>;
+
 export interface WorkItemComment {
   author: string;
   body: string;
@@ -99,6 +108,21 @@ export interface ValidationReport {
   commands: ValidationCommandResult[];
 }
 
+export interface ApprovalDecision {
+  action: ApprovalAction;
+  reviewer: string;
+  comment?: string;
+  createdAt: string;
+}
+
+export interface ApprovalState {
+  required: boolean;
+  status: "not_required" | "pending" | "approved" | "rejected";
+  requestedAt?: string;
+  resolvedAt?: string;
+  decisions: ApprovalDecision[];
+}
+
 export interface RunRecord {
   id: string;
   projectId: string;
@@ -113,6 +137,7 @@ export interface RunRecord {
   contextPack?: ContextPack;
   plan?: ImplementationPlan;
   validation?: ValidationReport;
+  approval?: ApprovalState;
 }
 
 export interface RunEvent {
@@ -236,10 +261,20 @@ export interface DashboardActivityItem {
   status: "completed" | "in_progress" | "attention";
 }
 
+export interface DashboardApprovalItem {
+  runId: string;
+  issueKey: string;
+  repo: string;
+  requestedAt: string;
+  summary: string;
+  status: "pending" | "approved" | "rejected";
+}
+
 export interface DashboardSummary {
   generatedAt: string;
   metrics: DashboardMetric[];
   providerHealth: DashboardProviderHealth[];
   recentActivity: DashboardActivityItem[];
+  approvalQueue: DashboardApprovalItem[];
   launchTracks: string[];
 }

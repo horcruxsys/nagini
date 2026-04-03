@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Button } from "@horcruxsys/nagini/ui/button";
+import { approveRunAction, rejectRunAction } from "./actions";
 import { getDashboardData } from "../lib/orchestrator";
 import styles from "./page.module.css";
 
@@ -45,7 +46,9 @@ export default async function Home() {
           <div className={styles.heroGrid}>
             <div className={styles.heroCopy}>
               <span className={styles.badge}>iOS6-inspired orchestration</span>
-              <h1>Clean AI delivery UX for enterprise teams and 1M consumers.</h1>
+              <h1>
+                Clean AI delivery UX for enterprise teams and 1M consumers.
+              </h1>
               <p className={styles.lead}>
                 This next phase brings a polished, high-trust interface to the
                 orchestrator: faster onboarding, clearer approvals, and a
@@ -75,7 +78,8 @@ export default async function Home() {
               <div className={styles.panelHeader}>
                 <strong>Run composer</strong>
                 <span>
-                  Updated {new Date(dashboard.generatedAt).toLocaleTimeString([], {
+                  Updated{" "}
+                  {new Date(dashboard.generatedAt).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
@@ -100,7 +104,8 @@ export default async function Home() {
                   <li key={provider.provider}>
                     <strong>{provider.provider}</strong>
                     <span>
-                      {provider.status === "ready" ? "Ready" : "Degraded"} · {provider.message}
+                      {provider.status === "ready" ? "Ready" : "Degraded"} ·{" "}
+                      {provider.message}
                     </span>
                   </li>
                 ))}
@@ -111,7 +116,11 @@ export default async function Home() {
 
         <section className={styles.metricsRow}>
           {dashboard.metrics.map((metric) => (
-            <article key={metric.id} className={styles.metricCard} data-tone={metric.tone}>
+            <article
+              key={metric.id}
+              className={styles.metricCard}
+              data-tone={metric.tone}
+            >
               <p>{metric.label}</p>
               <strong>{metric.value}</strong>
               <span>{metric.note}</span>
@@ -146,6 +155,14 @@ export default async function Home() {
                 <li key={step.id}>
                   <strong>{step.title}</strong>
                   <span>{step.detail}</span>
+                  <div className={styles.timelineFooter}>
+                    <time>{new Date(step.timestamp).toLocaleString()}</time>
+                    {!step.id.startsWith("fallback-") ? (
+                      <Link className={styles.detailLink} href={`/runs/${step.id}`}>
+                        Open run details
+                      </Link>
+                    ) : null}
+                  </div>
                 </li>
               ))}
             </ol>
@@ -153,9 +170,98 @@ export default async function Home() {
 
           <article className={styles.infoPanel}>
             <div className={styles.panelTitleRow}>
-              <h2>Phase rollout</h2>
-              <span className={styles.panelBadge}>1M-user path</span>
+              <h2>Approval queue</h2>
+              <span className={styles.panelBadge}>Human in the loop</span>
             </div>
+            <ul className={styles.approvalList}>
+              {dashboard.approvalQueue.length > 0 ? (
+                dashboard.approvalQueue.map((item) => (
+                  <li key={item.runId} className={styles.approvalItem}>
+                    <div className={styles.approvalHeader}>
+                      <div>
+                        <strong>
+                          <Link
+                            className={styles.detailLink}
+                            href={`/runs/${item.runId}`}
+                          >
+                            {item.issueKey}
+                          </Link>
+                        </strong>
+                        <p className={styles.approvalMeta}>{item.repo}</p>
+                      </div>
+                      <span
+                        className={styles.statusTag}
+                        data-status={item.status}
+                      >
+                        {item.status}
+                      </span>
+                    </div>
+
+                    <span>{item.summary}</span>
+                    <div className={styles.cardFooter}>
+                      <time>{new Date(item.requestedAt).toLocaleString()}</time>
+                      <Link className={styles.detailLink} href={`/runs/${item.runId}`}>
+                        View details
+                      </Link>
+                    </div>
+
+                    {item.status === "pending" ? (
+                      <form className={styles.approvalForm}>
+                        <input type="hidden" name="runId" value={item.runId} />
+                        <input
+                          type="hidden"
+                          name="reviewer"
+                          value="ui.operator"
+                        />
+                        <input
+                          className={styles.commentInput}
+                          type="text"
+                          name="comment"
+                          placeholder="Add guidance for the agent (optional)"
+                        />
+                        <div className={styles.approvalButtons}>
+                          <button
+                            type="submit"
+                            formAction={approveRunAction}
+                            className={styles.approveButton}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="submit"
+                            formAction={rejectRunAction}
+                            className={styles.rejectButton}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <p className={styles.decisionNote}>
+                        Decision captured. The run timeline reflects the latest
+                        reviewer action.
+                      </p>
+                    )}
+                  </li>
+                ))
+              ) : (
+                <li className={styles.approvalItem}>
+                  <strong>No approvals are waiting right now.</strong>
+                  <span>
+                    New implement runs will appear here for one-tap review.
+                  </span>
+                </li>
+              )}
+            </ul>
+          </article>
+        </section>
+
+        <section className={styles.sectionBlock}>
+          <div className={styles.sectionHeading}>
+            <span>Rollout track</span>
+            <h2>Approval-first expansion for a high-trust launch.</h2>
+          </div>
+          <article className={styles.infoPanel}>
             <ul className={styles.trackList}>
               {dashboard.launchTracks.map((track) => (
                 <li key={track}>{track}</li>
@@ -163,7 +269,8 @@ export default async function Home() {
             </ul>
             <p className={styles.footerNote}>
               Implementation sources live in <code>apps/orchestrator/</code>,{" "}
-              <code>packages/workflows/</code>, and <code>packages/knowledge/</code>.
+              <code>packages/workflows/</code>, and{" "}
+              <code>packages/knowledge/</code>.
             </p>
           </article>
         </section>

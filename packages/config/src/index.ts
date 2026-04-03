@@ -24,9 +24,7 @@ const PostgresConfigSchema = z.object({
   database: z.string().min(1).default("nagini"),
   user: z.string().min(1).default("nagini"),
   password: z.string().min(1),
-  ssl: z
-    .enum(["disable", "prefer", "require"])
-    .default("prefer"),
+  ssl: z.enum(["disable", "prefer", "require"]).default("prefer"),
 });
 
 const OpenAIConfigSchema = z.object({

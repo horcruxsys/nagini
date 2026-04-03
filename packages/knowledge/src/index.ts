@@ -18,7 +18,10 @@ export interface BuildContextPackInput {
 }
 
 export interface KnowledgeService {
-  ingestDocuments(projectId: string, documents: SourceDocument[]): Promise<number>;
+  ingestDocuments(
+    projectId: string,
+    documents: SourceDocument[],
+  ): Promise<number>;
   retrieve(request: RetrievalRequest): Promise<ContextCitation[]>;
   createContextPack(input: BuildContextPackInput): Promise<ContextPack>;
 }
@@ -135,7 +138,9 @@ export class HybridKnowledgeService implements KnowledgeService {
 
     return results.map((result, index) => ({
       id: result.chunk.id,
-      source: (result.chunk.metadata.provider as "jira" | "confluence" | "repo") ?? "repo",
+      source:
+        (result.chunk.metadata.provider as "jira" | "confluence" | "repo") ??
+        "repo",
       title: result.chunk.headingPath.join(" › ") || `Chunk ${index + 1}`,
       url: String(result.chunk.metadata.url ?? ""),
       snippet: result.chunk.text.slice(0, 320),
@@ -168,7 +173,9 @@ export class HybridKnowledgeService implements KnowledgeService {
     ];
 
     if (mergedCitations.length === 0) {
-      assumptions.push("No indexed knowledge was found yet, so the ticket itself is the main source of truth.");
+      assumptions.push(
+        "No indexed knowledge was found yet, so the ticket itself is the main source of truth.",
+      );
     }
 
     return {
@@ -191,7 +198,9 @@ export class HybridKnowledgeService implements KnowledgeService {
           ? [
               "Which actions should require mandatory human approval in the target environment?",
             ]
-          : ["Acceptance criteria are missing in Jira and should be confirmed."],
+          : [
+              "Acceptance criteria are missing in Jira and should be confirmed.",
+            ],
     };
   }
 }

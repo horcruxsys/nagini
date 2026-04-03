@@ -33,10 +33,7 @@ export class LiveGitHubConnector implements GitHubConnector {
     return { owner: parts[0], repo: parts[1] };
   }
 
-  async findRelevantFiles(
-    repo: string,
-    issueKey: string,
-  ): Promise<string[]> {
+  async findRelevantFiles(repo: string, issueKey: string): Promise<string[]> {
     const { owner, repo: repoName } = this.parseRepo(repo);
     const octokit = await this.getOctokit();
 
@@ -55,10 +52,7 @@ export class LiveGitHubConnector implements GitHubConnector {
     });
   }
 
-  async getRepoTree(
-    repo: string,
-    ref = "HEAD",
-  ): Promise<RepoTreeEntry[]> {
+  async getRepoTree(repo: string, ref = "HEAD"): Promise<RepoTreeEntry[]> {
     const { owner, repo: repoName } = this.parseRepo(repo);
     const octokit = await this.getOctokit();
 
@@ -105,10 +99,7 @@ export class LiveGitHubConnector implements GitHubConnector {
     });
   }
 
-  async searchCode(
-    repo: string,
-    query: string,
-  ): Promise<CodeSearchResult[]> {
+  async searchCode(repo: string, query: string): Promise<CodeSearchResult[]> {
     const { owner, repo: repoName } = this.parseRepo(repo);
     const octokit = await this.getOctokit();
 
@@ -194,9 +185,7 @@ export class LiveGitHubConnector implements GitHubConnector {
         provider: "github",
         status: "degraded",
         message:
-          error instanceof Error
-            ? error.message
-            : "Unknown GitHub error.",
+          error instanceof Error ? error.message : "Unknown GitHub error.",
         lastCheckedAt: new Date().toISOString(),
       };
     }

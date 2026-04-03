@@ -1,6 +1,9 @@
 import Fastify from "fastify";
 
-import { RunRequestSchema } from "@horcruxsys/nagini/domain";
+import {
+  ApprovalDecisionInputSchema,
+  RunRequestSchema,
+} from "@horcruxsys/nagini/domain";
 import {
   buildRunTimeline,
   OrchestratorWorkflowService,
@@ -24,8 +27,16 @@ export function buildServer() {
   }));
 
   app.get("/api/dashboard", async (_request, reply) => {
-    reply.header("Cache-Control", "public, max-age=15, stale-while-revalidate=60");
+    reply.header(
+      "Cache-Control",
+      "public, max-age=15, stale-while-revalidate=60",
+    );
     return workflowService.getDashboardSummary();
+  });
+
+  app.get("/api/approvals", async () => {
+    const dashboard = await workflowService.getDashboardSummary();
+    return { items: dashboard.approvalQueue };
   });
 
   app.get("/api/runs", async () => ({
@@ -55,6 +66,72 @@ export function buildServer() {
     }
 
     return run;
+  });
+
+  app.get("/api/runs/:runId/timeline", async (request, reply) => {
+    const { runId } = request.params as { runId: string };
+    const run = await workflowService.getRun(runId);
+
+    if (!run) {
+      return reply.status(404).send({ message: `Run ${runId} was not found.` });
+    }
+
+    return {
+      runId,
+      items: buildRunTimeline(run),
+    };
+  });
+
+  app.post("/api/runs/:runId/approve", async (request, reply) => {
+    const { runId } = request.params as { runId: string };
+    const parsed = ApprovalDecisionInputSchema.safeParse(request.body ?? {});
+
+    if (!parsed.success) {
+      return reply.status(400).send({
+        message: "Invalid approval payload.",
+        issues: parsed.error.flatten(),
+      });
+    }
+
+    try {
+      const run = await workflowService.decideApproval(
+        runId,
+        "approved",
+        parsed.data,
+      );
+      return reply.send(run);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to approve run.";
+      const statusCode = message.includes("was not found") ? 404 : 400;
+      return reply.status(statusCode).send({ message });
+    }
+  });
+
+  app.post("/api/runs/:runId/reject", async (request, reply) => {
+    const { runId } = request.params as { runId: string };
+    const parsed = ApprovalDecisionInputSchema.safeParse(request.body ?? {});
+
+    if (!parsed.success) {
+      return reply.status(400).send({
+        message: "Invalid rejection payload.",
+        issues: parsed.error.flatten(),
+      });
+    }
+
+    try {
+      const run = await workflowService.decideApproval(
+        runId,
+        "rejected",
+        parsed.data,
+      );
+      return reply.send(run);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to reject run.";
+      const statusCode = message.includes("was not found") ? 404 : 400;
+      return reply.status(statusCode).send({ message });
+    }
   });
 
   app.get("/api/runs/:runId/events", async (request, reply) => {

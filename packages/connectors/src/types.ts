@@ -15,13 +15,19 @@ export interface ConnectorHealth {
 
 export interface JiraConnector {
   getWorkItem(issueKey: string): Promise<WorkItem>;
-  getIssueAsDocument?(issueKey: string, projectId: string): Promise<SourceDocument>;
+  getIssueAsDocument?(
+    issueKey: string,
+    projectId: string,
+  ): Promise<SourceDocument>;
   getHealth(): Promise<ConnectorHealth>;
 }
 
 export interface ConfluenceConnector {
   getRelatedPages(issueKey: string): Promise<ContextCitation[]>;
-  getPageAsDocument?(pageId: string, projectId: string): Promise<SourceDocument>;
+  getPageAsDocument?(
+    pageId: string,
+    projectId: string,
+  ): Promise<SourceDocument>;
   getHealth(): Promise<ConnectorHealth>;
 }
 

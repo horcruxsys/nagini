@@ -55,12 +55,19 @@ export class InMemoryPersistence implements PersistenceLayer {
     this.documents.set(document.id, document);
   }
 
-  async replaceChunks(documentId: string, chunks: DocumentChunk[]): Promise<void> {
+  async replaceChunks(
+    documentId: string,
+    chunks: DocumentChunk[],
+  ): Promise<void> {
     this.chunks.set(documentId, chunks);
   }
 
   async searchChunks(request: RetrievalRequest): Promise<ScoredChunk[]> {
-    const queryTerms = [request.issueKey, request.textQuery, ...request.relatedTerms]
+    const queryTerms = [
+      request.issueKey,
+      request.textQuery,
+      ...request.relatedTerms,
+    ]
       .join(" ")
       .toLowerCase()
       .split(/\s+/)
@@ -74,7 +81,9 @@ export class InMemoryPersistence implements PersistenceLayer {
 
       for (const chunk of chunks) {
         const haystack = `${doc.title} ${chunk.text}`.toLowerCase();
-        const matches = queryTerms.filter((term) => haystack.includes(term)).length;
+        const matches = queryTerms.filter((term) =>
+          haystack.includes(term),
+        ).length;
         if (matches > 0) {
           results.push({
             chunk,
@@ -250,7 +259,10 @@ export class PostgresPersistence implements PersistenceLayer {
     );
   }
 
-  async replaceChunks(documentId: string, chunks: DocumentChunk[]): Promise<void> {
+  async replaceChunks(
+    documentId: string,
+    chunks: DocumentChunk[],
+  ): Promise<void> {
     await this.ensureSchema();
     const client = await this.pool.connect();
     try {
@@ -286,7 +298,11 @@ export class PostgresPersistence implements PersistenceLayer {
 
   async searchChunks(request: RetrievalRequest): Promise<ScoredChunk[]> {
     await this.ensureSchema();
-    const queryText = [request.issueKey, request.textQuery, ...request.relatedTerms]
+    const queryText = [
+      request.issueKey,
+      request.textQuery,
+      ...request.relatedTerms,
+    ]
       .filter(Boolean)
       .join(" ");
 
@@ -312,28 +328,30 @@ export class PostgresPersistence implements PersistenceLayer {
       [request.projectId, queryText || request.issueKey, request.topK],
     );
 
-    return result.rows.map((row: {
-      id: string;
-      document_id: string;
-      chunk_index: number;
-      heading_path: string[];
-      text: string;
-      metadata: Record<string, unknown>;
-      score: number;
-    }) => ({
-      chunk: {
-        id: row.id,
-        documentId: row.document_id,
-        chunkIndex: row.chunk_index,
-        headingPath: row.heading_path ?? [],
-        tokenCount: row.text.split(/\s+/).filter(Boolean).length,
-        text: row.text,
-        keywords: queryText,
-        metadata: row.metadata ?? {},
-      },
-      score: Number(row.score) || 0,
-      source: "bm25",
-    }));
+    return result.rows.map(
+      (row: {
+        id: string;
+        document_id: string;
+        chunk_index: number;
+        heading_path: string[];
+        text: string;
+        metadata: Record<string, unknown>;
+        score: number;
+      }) => ({
+        chunk: {
+          id: row.id,
+          documentId: row.document_id,
+          chunkIndex: row.chunk_index,
+          headingPath: row.heading_path ?? [],
+          tokenCount: row.text.split(/\s+/).filter(Boolean).length,
+          text: row.text,
+          keywords: queryText,
+          metadata: row.metadata ?? {},
+        },
+        score: Number(row.score) || 0,
+        source: "bm25",
+      }),
+    );
   }
 }
 

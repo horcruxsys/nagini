@@ -4,6 +4,8 @@ import { DeterministicPlanningAgent } from "@horcruxsys/nagini/agents";
 import { loadPartialConfig } from "@horcruxsys/nagini/config";
 import { createConnectorBundle } from "@horcruxsys/nagini/connectors";
 import type {
+  ApprovalAction,
+  ApprovalDecisionInput,
   ContextCitation,
   DashboardActivityItem,
   DashboardSummary,
@@ -36,12 +38,13 @@ export class OrchestratorWorkflowService {
   }
 
   async getDashboardSummary(): Promise<DashboardSummary> {
-    const [runs, jiraHealth, confluenceHealth, githubHealth] = await Promise.all([
-      this.persistence.listRuns(),
-      this.connectors.jira.getHealth(),
-      this.connectors.confluence.getHealth(),
-      this.connectors.github.getHealth(),
-    ]);
+    const [runs, jiraHealth, confluenceHealth, githubHealth] =
+      await Promise.all([
+        this.persistence.listRuns(),
+        this.connectors.jira.getHealth(),
+        this.connectors.confluence.getHealth(),
+        this.connectors.github.getHealth(),
+      ]);
 
     const lastSevenDays = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const recentRuns = runs.filter(
@@ -78,15 +81,36 @@ export class OrchestratorWorkflowService {
       runs.slice(0, 5).map((run) => ({
         id: run.id,
         title: `${run.issueKey} · ${run.mode}`,
-        detail: run.validation?.summary ?? run.summary,
+        detail:
+          run.approval?.status === "pending"
+            ? "Awaiting human approval before execution."
+            : (run.validation?.summary ?? run.summary),
         timestamp: run.updatedAt,
         status:
-          run.status === "failed"
+          run.status === "failed" || run.approval?.status === "rejected"
             ? "attention"
             : run.status === "completed"
               ? "completed"
               : "in_progress",
       })) ?? [];
+    const approvalQueue: DashboardSummary["approvalQueue"] = runs
+      .filter(
+        (run) => run.approval?.status && run.approval.status !== "not_required",
+      )
+      .slice(0, 6)
+      .map((run) => ({
+        runId: run.id,
+        issueKey: run.issueKey,
+        repo: run.repo,
+        requestedAt: run.approval?.requestedAt ?? run.updatedAt,
+        summary: run.summary,
+        status:
+          run.approval?.status === "approved"
+            ? "approved"
+            : run.approval?.status === "rejected"
+              ? "rejected"
+              : "pending",
+      }));
 
     return {
       generatedAt: new Date().toISOString(),
@@ -107,6 +131,17 @@ export class OrchestratorWorkflowService {
           value: String(recentRuns.length),
           note: `${completedRuns.length} completed • ${failedRuns.length} need attention`,
           tone: failedRuns.length > 0 ? "warning" : "positive",
+        },
+        {
+          id: "approvals",
+          label: "Approval queue",
+          value: String(
+            approvalQueue.filter((item) => item.status === "pending").length,
+          ),
+          note: `${approvalQueue.filter((item) => item.status === "approved").length} approved recently`,
+          tone: approvalQueue.some((item) => item.status === "pending")
+            ? "warning"
+            : "neutral",
         },
         {
           id: "validation",
@@ -143,6 +178,7 @@ export class OrchestratorWorkflowService {
                 status: "completed",
               },
             ],
+      approvalQueue,
       launchTracks: [
         "Pilot with one product team and approval-on-write enabled.",
         "Expand retrieval freshness and PR automation for shared services.",
@@ -165,6 +201,11 @@ export class OrchestratorWorkflowService {
       summary: `Gathering context for ${request.issueKey}.`,
       createdAt: timestamp,
       updatedAt: timestamp,
+      approval: {
+        required: false,
+        status: "not_required",
+        decisions: [],
+      },
     };
 
     await this.persistence.saveRun(initialRun);
@@ -194,11 +235,43 @@ export class OrchestratorWorkflowService {
         repoHints: impactedAreas,
       });
       const plan = await this.planningAgent.createPlan(contextPack);
+      const approvalRequired =
+        request.mode === "implement" || plan.approvalRequired;
+      const updatedAt = new Date().toISOString();
+
+      if (approvalRequired) {
+        const awaitingRun: RunRecord = {
+          ...initialRun,
+          status: "awaiting_approval",
+          summary: `Awaiting approval to execute ${plan.branchName}.`,
+          updatedAt,
+          contextPack,
+          plan: {
+            ...plan,
+            approvalRequired: true,
+          },
+          approval: {
+            required: true,
+            status: "pending",
+            requestedAt: updatedAt,
+            decisions: [],
+          },
+          validation: {
+            status: "pending",
+            simulated: false,
+            summary: "Execution is paused until an approver reviews this run.",
+            commands: [],
+          },
+        };
+
+        await this.persistence.saveRun(awaitingRun);
+        return awaitingRun;
+      }
+
       const validation =
         request.mode === "implement"
           ? await this.executionService.runValidation(plan, request.repo)
           : undefined;
-      const updatedAt = new Date().toISOString();
       const finalRun: RunRecord = {
         ...initialRun,
         status: validation?.status === "fail" ? "failed" : "completed",
@@ -224,6 +297,77 @@ export class OrchestratorWorkflowService {
       await this.persistence.saveRun(failedRun);
       throw error;
     }
+  }
+
+  async decideApproval(
+    runId: string,
+    action: ApprovalAction,
+    input: ApprovalDecisionInput,
+  ): Promise<RunRecord> {
+    const run = await this.persistence.getRun(runId);
+
+    if (!run) {
+      throw new Error(`Run ${runId} was not found.`);
+    }
+
+    if (!run.approval?.required) {
+      throw new Error(`Run ${runId} does not require approval.`);
+    }
+
+    const decisionTime = new Date().toISOString();
+    const decisions = [
+      ...(run.approval.decisions ?? []),
+      {
+        action,
+        reviewer: input.reviewer,
+        comment: input.comment,
+        createdAt: decisionTime,
+      },
+    ];
+
+    if (action === "rejected") {
+      const rejectedRun: RunRecord = {
+        ...run,
+        status: "blocked",
+        updatedAt: decisionTime,
+        summary: input.comment
+          ? `Run rejected by ${input.reviewer}: ${input.comment}`
+          : `Run rejected by ${input.reviewer}.`,
+        approval: {
+          ...run.approval,
+          status: "rejected",
+          resolvedAt: decisionTime,
+          decisions,
+        },
+      };
+      await this.persistence.saveRun(rejectedRun);
+      return rejectedRun;
+    }
+
+    if (!run.plan) {
+      throw new Error(`Run ${runId} has no plan to execute.`);
+    }
+
+    const validation =
+      run.mode === "implement"
+        ? await this.executionService.runValidation(run.plan, run.repo)
+        : run.validation;
+
+    const approvedRun: RunRecord = {
+      ...run,
+      status: validation?.status === "fail" ? "failed" : "completed",
+      updatedAt: new Date().toISOString(),
+      summary: run.plan.summary,
+      validation,
+      approval: {
+        ...run.approval,
+        status: "approved",
+        resolvedAt: decisionTime,
+        decisions,
+      },
+    };
+    await this.persistence.saveRun(approvedRun);
+    return approvedRun;
   }
 
   private async collectDocuments(
@@ -281,8 +425,7 @@ export class OrchestratorWorkflowService {
 
 export function buildRunTimeline(run: RunRecord): RunEvent[] {
   const createdAt = run.createdAt;
-
-  return [
+  const events: RunEvent[] = [
     {
       id: `${run.id}-queued`,
       runId: run.id,
@@ -307,15 +450,50 @@ export function buildRunTimeline(run: RunRecord): RunEvent[] {
       detail: run.plan?.summary ?? "A structured execution plan is ready.",
       createdAt,
     },
-    {
-      id: `${run.id}-validation`,
-      runId: run.id,
-      type: "run.validation_result",
-      title: "Validation prepared",
-      detail:
-        run.validation?.summary ??
-        "This mode does not execute validation, but the plan and context are available for review.",
-      createdAt,
-    },
   ];
+
+  if (run.approval?.required) {
+    events.push({
+      id: `${run.id}-approval-requested`,
+      runId: run.id,
+      type: "run.approval_requested",
+      title: "Approval requested",
+      detail:
+        run.approval.status === "pending"
+          ? "A reviewer must approve this run before execution starts."
+          : `Approval status is ${run.approval.status}.`,
+      createdAt: run.approval.requestedAt ?? createdAt,
+    });
+  }
+
+  if (
+    run.approval?.status === "approved" ||
+    run.approval?.status === "rejected"
+  ) {
+    const latestDecision = run.approval.decisions.at(-1);
+    events.push({
+      id: `${run.id}-approval-resolved`,
+      runId: run.id,
+      type: "run.approval_resolved",
+      title:
+        run.approval.status === "approved" ? "Run approved" : "Run rejected",
+      detail: latestDecision?.comment
+        ? `${latestDecision.reviewer}: ${latestDecision.comment}`
+        : `Decision recorded by ${latestDecision?.reviewer ?? "reviewer"}.`,
+      createdAt: run.approval.resolvedAt ?? run.updatedAt,
+    });
+  }
+
+  events.push({
+    id: `${run.id}-validation`,
+    runId: run.id,
+    type: "run.validation_result",
+    title: "Validation prepared",
+    detail:
+      run.validation?.summary ??
+      "This mode does not execute validation, but the plan and context are available for review.",
+    createdAt: run.updatedAt,
+  });
+
+  return events;
 }

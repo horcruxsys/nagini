@@ -212,7 +212,8 @@
 
 .signalList,
 .timeline,
-.trackList {
+.trackList,
+.approvalList {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -223,7 +224,8 @@
 
 .signalList li,
 .timeline li,
-.trackList li {
+.trackList li,
+.approvalItem {
   border-radius: 14px;
   padding: 12px 13px;
   background: rgba(255, 255, 255, 0.68);
@@ -237,20 +239,139 @@
   gap: 10px;
 }
 
-.timeline li {
+.timeline li,
+.approvalItem {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
 .timeline li strong,
-.signalList strong {
+.signalList strong,
+.approvalItem strong {
   color: #173250;
   text-transform: capitalize;
 }
 
-.timeline li span {
+.timeline li span,
+.approvalItem span {
   line-height: 1.55;
+}
+
+.timeline li time,
+.trackList li time,
+.approvalItem time {
+  font-size: 0.77rem;
+  color: rgba(23, 50, 80, 0.62);
+}
+
+.timelineFooter,
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.detailLink {
+  color: #1d5ea5;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.detailLink:hover {
+  text-decoration: underline;
+}
+
+.approvalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.approvalMeta {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  color: rgba(23, 50, 80, 0.65);
+}
+
+.statusTag {
+  border-radius: 999px;
+  padding: 4px 8px;
+  border: 1px solid rgba(36, 74, 117, 0.14);
+  background: rgba(255, 255, 255, 0.75);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.statusTag[data-status="pending"] {
+  color: #8b5d12;
+  border-color: rgba(189, 124, 30, 0.22);
+}
+
+.statusTag[data-status="approved"] {
+  color: #18643f;
+  border-color: rgba(34, 128, 84, 0.22);
+}
+
+.statusTag[data-status="rejected"] {
+  color: #8a2a2a;
+  border-color: rgba(170, 59, 59, 0.22);
+}
+
+.approvalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.commentInput {
+  min-height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(36, 74, 117, 0.16);
+  background: rgba(255, 255, 255, 0.84);
+  padding: 10px 12px;
+  color: #173250;
+  font: inherit;
+}
+
+.approvalButtons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.approveButton,
+.rejectButton {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.approveButton {
+  color: white;
+  background: linear-gradient(180deg, #52b780 0%, #228054 100%);
+}
+
+.rejectButton {
+  color: #6e2020;
+  background: linear-gradient(180deg, #fff1f1 0%, #f2d5d5 100%);
+  border-color: rgba(170, 59, 59, 0.18);
+}
+
+.decisionNote {
+  margin-top: 6px;
+  font-size: 0.84rem;
+  color: rgba(23, 50, 80, 0.7);
 }
 
 .metricsRow,
@@ -432,6 +553,12 @@
   .signalList li,
   .timeline li,
   .trackList li,
+  .approvalItem,
+  .approvalMeta,
+  .decisionNote,
+  .timeline li time,
+  .trackList li time,
+  .approvalItem time,
   .sectionHeading span {
     color: rgba(237, 244, 255, 0.76);
   }
@@ -440,15 +567,28 @@
   .signalList li,
   .timeline li,
   .trackList li,
+  .approvalItem,
   .segmentedControl,
   .secondaryLink,
   .secondaryButton,
   .statusPill,
   .panelBadge,
-  .badge {
+  .badge,
+  .statusTag,
+  .commentInput {
     background: rgba(255, 255, 255, 0.06);
     border-color: rgba(143, 177, 219, 0.18);
     color: #edf4ff;
+  }
+
+  .approveButton {
+    background: linear-gradient(180deg, #3f9968 0%, #226644 100%);
+  }
+
+  .rejectButton {
+    background: linear-gradient(180deg, rgba(255, 233, 233, 0.18), rgba(126, 44, 44, 0.22));
+    color: #ffd7d7;
+    border-color: rgba(255, 160, 160, 0.18);
   }
 }
 

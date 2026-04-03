@@ -32,7 +32,11 @@ const Page = () => {
 
         <div className={styles.actions}>
           <Link href="/">Back to control center</Link>
-          <a href="http://127.0.0.1:4001/health" target="_blank" rel="noreferrer">
+          <a
+            href="http://127.0.0.1:4001/health"
+            target="_blank"
+            rel="noreferrer"
+          >
             Check live health
           </a>
         </div>

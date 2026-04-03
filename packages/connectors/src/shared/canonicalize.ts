@@ -22,10 +22,7 @@ export function htmlToMarkdown(html: string): string {
   md = md.replace(/<em[^>]*>(.*?)<\/em>/gi, "*$1*");
   md = md.replace(/<i[^>]*>(.*?)<\/i>/gi, "*$1*");
   md = md.replace(/<code[^>]*>(.*?)<\/code>/gi, "`$1`");
-  md = md.replace(
-    /<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi,
-    "[$2]($1)",
-  );
+  md = md.replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, "[$2]($1)");
 
   // Code blocks
   md = md.replace(

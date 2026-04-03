@@ -13,7 +13,13 @@ interface JiraIssueFields {
   priority?: { name?: string };
   status?: { name?: string };
   issuetype?: { name?: string };
-  comment?: { comments?: Array<{ author?: { displayName?: string }; body?: unknown; created?: string }> };
+  comment?: {
+    comments?: Array<{
+      author?: { displayName?: string };
+      body?: unknown;
+      created?: string;
+    }>;
+  };
   issuelinks?: Array<{
     outwardIssue?: { key?: string };
     inwardIssue?: { key?: string };
@@ -122,8 +128,7 @@ export class LiveJiraConnector implements JiraConnector {
       return {
         provider: "jira",
         status: "degraded",
-        message:
-          error instanceof Error ? error.message : "Unknown Jira error.",
+        message: error instanceof Error ? error.message : "Unknown Jira error.",
         lastCheckedAt: new Date().toISOString(),
       };
     }
