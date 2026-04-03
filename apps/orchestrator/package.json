@@ -1,0 +1,23 @@
+{
+  "name": "orchestrator",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run build --filter=orchestrator... && node dist/apps/orchestrator/src/index.js",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/apps/orchestrator/src/index.js",
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@horcruxsys/nagini/domain": "workspace:*",
+    "@horcruxsys/nagini/workflows": "workspace:*",
+    "fastify": "^5.6.1"
+  },
+  "devDependencies": {
+    "@horcruxsys/nagini/eslint-config": "workspace:*",
+    "@horcruxsys/nagini/typescript-config": "workspace:*",
+    "@types/node": "^22.15.3",
+    "eslint": "^9.39.1",
+    "typescript": "5.9.2"
+  }
+}

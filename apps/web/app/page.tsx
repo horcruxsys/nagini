@@ -1,102 +1,91 @@
-import Image, { type ImageProps } from "next/image";
 import { Button } from "@horcruxsys/nagini/ui/button";
 import styles from "./page.module.css";
 
-type Props = Omit<ImageProps, "src"> & {
-  srcLight: string;
-  srcDark: string;
-};
+const capabilities = [
+  {
+    title: "Jira-aware planning",
+    description:
+      "Turn a ticket like `CDX-739` into requirements, acceptance criteria, and an execution-ready plan.",
+  },
+  {
+    title: "Confluence-backed RAG",
+    description:
+      "Retrieve design rationale, prior discussions, and constraints with citations and freshness signals.",
+  },
+  {
+    title: "GitHub MCP execution",
+    description:
+      "Inspect the repo, locate impacted files, and drive safe implementation through a bounded workflow.",
+  },
+  {
+    title: "Validation-first delivery",
+    description:
+      "Keep every run grounded in lint, type-check, test, and PR evidence before calling the task done.",
+  },
+];
 
-const ThemeImage = (props: Props) => {
-  const { srcLight, srcDark, ...rest } = props;
-
-  return (
-    <>
-      <Image {...rest} src={srcLight} className="imgLight" />
-      <Image {...rest} src={srcDark} className="imgDark" />
-    </>
-  );
-};
+const workflow = [
+  "Understand the ticket and linked context.",
+  "Assemble a cited context pack from Jira, Confluence, and repo hints.",
+  "Generate a plan, approvals, and target file list.",
+  "Execute in a controlled plan → code → validate loop.",
+  "Publish a draft PR with evidence and follow-up notes.",
+];
 
 export default function Home() {
   return (
     <div className={styles.page}>
       <main className={styles.main}>
-        <ThemeImage
-          className={styles.logo}
-          srcLight="turborepo-dark.svg"
-          srcDark="turborepo-light.svg"
-          alt="Turborepo logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>apps/web/app/page.tsx</code>
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+        <span className={styles.badge}>Nagini AI Delivery Orchestrator</span>
+        <h1>
+          Implement software work items with grounded multi-agent execution.
+        </h1>
+        <p className={styles.lead}>
+          This workspace now includes an implementation scaffold for an
+          orchestrator that connects Jira, Confluence, and GitHub MCP to plan
+          and execute delivery safely.
+        </p>
 
         <div className={styles.ctas}>
           <a
             className={styles.primary}
-            href="https://vercel.com/new/clone?demo-description=Learn+to+implement+a+monorepo+with+a+two+Next.js+sites+that+has+installed+three+local+packages.&demo-image=%2F%2Fimages.ctfassets.net%2Fe5382hct74si%2F4K8ZISWAzJ8X1504ca0zmC%2F0b21a1c6246add355e55816278ef54bc%2FBasic.png&demo-title=Monorepo+with+Turborepo&demo-url=https%3A%2F%2Fexamples-basic-web.vercel.sh%2F&from=templates&project-name=Monorepo+with+Turborepo&repository-name=monorepo-turborepo&repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fturborepo%2Ftree%2Fmain%2Fexamples%2Fbasic&root-directory=apps%2Fdocs&skippable-integrations=1&teamSlug=vercel&utm_source=create-turbo"
+            href="http://localhost:4000/health"
             target="_blank"
             rel="noopener noreferrer"
           >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
+            Open orchestrator health
           </a>
-          <a
-            href="https://turborepo.dev/docs?utm_source"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
+          <a className={styles.secondary} href="/onboarding">
+            Project onboarding
           </a>
+          <Button appName="web" className={styles.secondary}>
+            Preview shared UI
+          </Button>
         </div>
-        <Button appName="web" className={styles.secondary}>
-          Open alert
-        </Button>
+
+        <section className={styles.grid}>
+          {capabilities.map((item) => (
+            <article key={item.title} className={styles.card}>
+              <h2>{item.title}</h2>
+              <p>{item.description}</p>
+            </article>
+          ))}
+        </section>
+
+        <section className={styles.workflow}>
+          <h2 className={styles.sectionTitle}>Execution flow</h2>
+          <ol>
+            {workflow.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+          <p className={styles.footerNote}>
+            Design and implementation notes live in{" "}
+            <code>docs/ai-orchestrator/</code> and the API scaffold lives in{" "}
+            <code>apps/orchestrator/</code>.
+          </p>
+        </section>
       </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com/templates?search=turborepo&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://turborepo.dev?utm_source=create-turbo"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to turborepo.dev →
-        </a>
-      </footer>
     </div>
   );
 }

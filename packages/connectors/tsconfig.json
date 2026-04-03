@@ -1,0 +1,13 @@
+{
+  "extends": "@horcruxsys/nagini/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "strictNullChecks": true,
+    "baseUrl": ".",
+    "paths": {
+      "@horcruxsys/nagini/domain": ["../domain/src/index.ts"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}
