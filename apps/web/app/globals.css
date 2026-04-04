@@ -21,7 +21,7 @@ body {
   background:
     radial-gradient(circle at top, rgba(255, 255, 255, 0.75), transparent 0, transparent 42%),
     linear-gradient(180deg, #eef5fc 0%, #dbe8f5 36%, #c9dced 100%);
-  font-family: var(--font-geist-sans), sans-serif;
+  font-family: var(--font-sf-pro), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

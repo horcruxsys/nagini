@@ -267,7 +267,7 @@
 
 .miniList code,
 .commandMeta code {
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-sf-pro);
 }
 
 .citationHeader {
