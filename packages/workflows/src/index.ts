@@ -20,6 +20,7 @@ import type {
 import { LocalExecutionService } from "@horcruxsys/nagini/execution";
 import { HybridKnowledgeService } from "@horcruxsys/nagini/knowledge";
 import { createPersistenceLayer } from "@horcruxsys/nagini/persistence";
+export { createApprovalInterrupt, type WorkflowInterrupt } from "./interrupt.js";
 
 export class OrchestratorWorkflowService {
   private readonly config = loadPartialConfig();
