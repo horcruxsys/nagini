@@ -411,6 +411,9 @@ importers:
 
   packages/workflows:
     dependencies:
+      '@ai-sdk/openai':
+        specifier: ^3.0.50
+        version: 3.0.50(zod@3.25.76)
       '@horcruxsys/nagini/agents':
         specifier: workspace:*
         version: link:../agents
@@ -432,6 +435,9 @@ importers:
       '@horcruxsys/nagini/persistence':
         specifier: workspace:*
         version: link:../persistence
+      ai:
+        specifier: ^6.0.145
+        version: 6.0.145(zod@3.25.76)
     devDependencies:
       '@horcruxsys/nagini/eslint-config':
         specifier: workspace:*

@@ -327,3 +327,131 @@ export interface DashboardSummary {
   approvalQueue: DashboardApprovalItem[];
   launchTracks: string[];
 }
+
+// ── Blueprint / Architect Workflow ──────────────────────────────────
+
+export interface ApiEndpoint {
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  path: string;
+  description: string;
+  requestSchema?: Record<string, unknown>;
+  responseSchema?: Record<string, unknown>;
+}
+
+export interface DataModelEntity {
+  name: string;
+  fields: Array<{
+    name: string;
+    type: string;
+    required: boolean;
+    description?: string;
+  }>;
+  relations?: string[];
+}
+
+export interface TechStackEntry {
+  name: string;
+  version: string;
+  role: string;
+  lintRules?: string[];
+}
+
+export interface ProjectTopology {
+  frontend?: string;
+  backend?: string;
+  packages: string[];
+  folders: string[];
+}
+
+export interface BlueprintSpec {
+  projectName: string;
+  projectTopology: ProjectTopology;
+  apiManifest: ApiEndpoint[];
+  dataModel: DataModelEntity[];
+  techStackRules: TechStackEntry[];
+  securityNotes: string[];
+  complianceFlags: string[];
+  generatedAt: string;
+}
+
+export const ApiEndpointSchema = z.object({
+  method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]),
+  path: z.string().min(1),
+  description: z.string().min(1),
+  requestSchema: z.record(z.unknown()).optional(),
+  responseSchema: z.record(z.unknown()).optional(),
+});
+
+export const DataModelEntitySchema = z.object({
+  name: z.string().min(1),
+  fields: z.array(
+    z.object({
+      name: z.string().min(1),
+      type: z.string().min(1),
+      required: z.boolean(),
+      description: z.string().optional(),
+    }),
+  ),
+  relations: z.array(z.string()).optional(),
+});
+
+export const TechStackEntrySchema = z.object({
+  name: z.string().min(1),
+  version: z.string().min(1),
+  role: z.string().min(1),
+  lintRules: z.array(z.string()).optional(),
+});
+
+export const ProjectTopologySchema = z.object({
+  frontend: z.string().optional(),
+  backend: z.string().optional(),
+  packages: z.array(z.string()),
+  folders: z.array(z.string()),
+});
+
+export const BlueprintSpecSchema = z.object({
+  projectName: z.string().min(1),
+  projectTopology: ProjectTopologySchema,
+  apiManifest: z.array(ApiEndpointSchema),
+  dataModel: z.array(DataModelEntitySchema),
+  techStackRules: z.array(TechStackEntrySchema),
+  securityNotes: z.array(z.string()),
+  complianceFlags: z.array(z.string()),
+  generatedAt: z.string().datetime(),
+});
+
+export type BlueprintSpecInput = z.infer<typeof BlueprintSpecSchema>;
+
+export const ArchitectWorkflowRequestSchema = z.object({
+  sessionId: z.string().min(1).optional(),
+  prompt: z.string().min(1),
+  clarifications: z.record(z.string()).optional(),
+});
+export type ArchitectWorkflowRequest = z.infer<
+  typeof ArchitectWorkflowRequestSchema
+>;
+
+export const ArchitectWorkflowStatusSchema = z.enum([
+  "interviewing",
+  "designing",
+  "auditing",
+  "approved",
+  "needs_clarification",
+]);
+export type ArchitectWorkflowStatus = z.infer<
+  typeof ArchitectWorkflowStatusSchema
+>;
+
+export interface ArchitectWorkflowState {
+  sessionId: string;
+  prompt: string;
+  clarifications: Record<string, string>;
+  status: ArchitectWorkflowStatus;
+  clarifyingQuestions: string[];
+  blueprint?: BlueprintSpec;
+  securityAuditPassed: boolean;
+  validationErrors: string[];
+  thinkingLog: string[];
+  createdAt: string;
+  updatedAt: string;
+}
