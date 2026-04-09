@@ -546,7 +546,8 @@ export class ImplementationWorkflowService {
         timeoutMs: 3 * 60 * 1000,
       });
     }
-    return sandbox.exec("(npx tsc --noEmit 2>&1 || true) && npx next build 2>&1", {
+    // `next build` performs TypeScript type checking and full compilation in one pass.
+    return sandbox.exec("npx next build 2>&1", {
       timeoutMs: 3 * 60 * 1000,
     });
   }
