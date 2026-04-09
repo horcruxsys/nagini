@@ -9,6 +9,9 @@ import type {
 
 const exec = promisify(execCallback);
 
+export { LogStreamer, type SandboxLogEvent } from "./log-streamer.js";
+export { SecureFileSystem } from "./secure-filesystem.js";
+
 export interface ExecutionService {
   buildValidationCommands(repo: string): string[];
   runValidation(

@@ -1,5 +1,6 @@
 import type {
   ContextPack,
+  ImplementationPlanTask,
   ImplementationPlan,
   ValidationReport,
 } from "@horcruxsys/nagini/domain";
@@ -16,6 +17,26 @@ export interface PlanningAgent {
 }
 
 export { LLMPlanningAgent } from "./llm-agent.js";
+export {
+  ArchitectAgent,
+  type ArchitectOutput,
+  type ArchitectureMap,
+} from "./architect-agent.js";
+export {
+  CoderAgent,
+  type CoderTaskInput,
+  type CoderTaskResult,
+} from "./coder-agent.js";
+export {
+  QAFixerAgent,
+  type SelfCorrectionResult,
+  type ValidationRunner,
+} from "./qa-fixer-agent.js";
+export {
+  DevOpsAgent,
+  type DeploymentInput,
+  type DeploymentResult,
+} from "./devops-agent.js";
 
 export class DeterministicPlanningAgent implements PlanningAgent {
   async createPlan(contextPack: ContextPack): Promise<ImplementationPlan> {
@@ -75,4 +96,8 @@ export function summarizeReview(validation?: ValidationReport): string[] {
   return [
     "Validation needs revision before the run can be considered complete.",
   ];
+}
+
+export function toCoderTasks(plan: ImplementationPlan): ImplementationPlanTask[] {
+  return plan.tasks;
 }

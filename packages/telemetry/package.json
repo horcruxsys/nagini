@@ -1,0 +1,24 @@
+{
+  "name": "@horcruxsys/nagini/telemetry",
+  "private": true,
+  "main": "./dist/telemetry/src/index.js",
+  "types": "./dist/telemetry/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/telemetry/src/index.d.ts",
+      "default": "./dist/telemetry/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@horcruxsys/nagini/eslint-config": "workspace:*",
+    "@horcruxsys/nagini/typescript-config": "workspace:*",
+    "@types/node": "^22.15.3",
+    "eslint": "^9.39.1",
+    "typescript": "5.9.2"
+  }
+}
