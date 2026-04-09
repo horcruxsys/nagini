@@ -29,7 +29,11 @@ function now(): string {
 function buildDeterministicBlueprint(
   state: ArchitectWorkflowState,
 ): BlueprintSpec {
-  const projectName = state.prompt.slice(0, 60).replace(/[^a-zA-Z0-9 ]/g, "").trim() || "new-project";
+  const projectName = state.prompt
+    .slice(0, 60)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "new-project";
 
   return {
     projectName,
@@ -230,7 +234,7 @@ Unless the PM explicitly requests a different stack, default to:
   - Frontend: Next.js 15 (TypeScript, App Router)
   - Backend: Java Spring Boot 3 (Java 21, Maven)
   - Database: PostgreSQL 16 with Prisma (or JPA for Java)
-  - Auth: NextAuth v5 (frontend) + Spring Security (backend)
+  - Auth: next-auth v5 / Auth.js (frontend) + Spring Security (backend)
 
 Your output must be a fully structured Architectural Blueprint (blueprint.json) following the exact JSON schema provided.
 

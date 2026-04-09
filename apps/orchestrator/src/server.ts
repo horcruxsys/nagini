@@ -273,6 +273,9 @@ export function buildServer() {
         Connection: "keep-alive",
       });
 
+      const isArchitectTerminal = (s: string) =>
+        s === "approved" || s === "needs_clarification";
+
       // Send current state immediately if session exists
       const current = architectService.getSession(sessionId);
       if (current) {
@@ -280,10 +283,7 @@ export function buildServer() {
           `event: architect:thinking\ndata: ${JSON.stringify(current)}\n\n`,
         );
 
-        const isTerminal = (s: string) =>
-          s === "approved" || s === "needs_clarification";
-
-        if (isTerminal(current.status)) {
+        if (isArchitectTerminal(current.status)) {
           reply.raw.end();
           return reply;
         }
@@ -297,10 +297,7 @@ export function buildServer() {
               `event: architect:thinking\ndata: ${JSON.stringify(state)}\n\n`,
             );
 
-            const isTerminal = (status: string) =>
-              status === "approved" || status === "needs_clarification";
-
-            if (isTerminal(s.status)) {
+            if (isArchitectTerminal(s.status)) {
               cleanup();
             }
           }

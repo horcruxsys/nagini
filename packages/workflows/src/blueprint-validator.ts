@@ -12,7 +12,6 @@ export interface BlueprintValidationResult {
  * Known hallucinated or non-existent dependency names that LLMs commonly invent.
  */
 const KNOWN_HALLUCINATED_DEPS = new Set([
-  "next-auth-v5",
   "prisma-client-js",
   "@prisma/client-edge",
   "react-query-v5",
