@@ -328,6 +328,66 @@ export interface DashboardSummary {
   launchTracks: string[];
 }
 
+// ── Self-Healing Implementation Engine ──────────────────────────────
+
+export const FileStatusSchema = z.enum([
+  "pending",
+  "written",
+  "verified",
+  "failed",
+]);
+export type FileStatus = z.infer<typeof FileStatusSchema>;
+
+export interface ManagedFile {
+  path: string;
+  status: FileStatus;
+  content: string;
+  attempts: number;
+  lastError?: string;
+  writtenAt?: string;
+  verifiedAt?: string;
+}
+
+export interface SandboxExecutionResult {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+  durationMs: number;
+  command: string;
+}
+
+export const ImplementationSessionStatusSchema = z.enum([
+  "pending",
+  "orchestrating",
+  "coding",
+  "executing",
+  "fixing",
+  "completed",
+  "failed",
+]);
+export type ImplementationSessionStatus = z.infer<
+  typeof ImplementationSessionStatusSchema
+>;
+
+export interface ImplementationSessionState {
+  sessionId: string;
+  blueprintSessionId: string;
+  status: ImplementationSessionStatus;
+  files: ManagedFile[];
+  currentFileIndex: number;
+  totalFiles: number;
+  thinkingLog: string[];
+  sandboxLogs: SandboxExecutionResult[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const ImplementationRequestSchema = z.object({
+  blueprintSessionId: z.string().min(1),
+  openaiApiKey: z.string().optional(),
+});
+export type ImplementationRequest = z.infer<typeof ImplementationRequestSchema>;
+
 // ── Blueprint / Architect Workflow ──────────────────────────────────
 
 export interface ApiEndpoint {

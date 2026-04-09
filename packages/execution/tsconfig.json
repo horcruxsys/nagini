@@ -8,6 +8,6 @@
       "@horcruxsys/nagini/domain": ["../domain/src/index.ts"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "src/e2b.d.ts"],
   "exclude": ["node_modules", "dist"]
 }
