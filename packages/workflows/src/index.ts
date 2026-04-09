@@ -27,6 +27,10 @@ export {
   type ArchitectWorkflowRunOptions,
 } from "./architect-workflow.js";
 export { validateBlueprint, type BlueprintValidationResult } from "./blueprint-validator.js";
+export {
+  ImplementationWorkflowService,
+  implementationEmitter,
+} from "./implementation-workflow.js";
 
 export class OrchestratorWorkflowService {
   private readonly config = loadPartialConfig();

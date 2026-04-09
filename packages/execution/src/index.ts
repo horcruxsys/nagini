@@ -11,6 +11,26 @@ const exec = promisify(execCallback);
 
 export { LogStreamer, type SandboxLogEvent } from "./log-streamer.js";
 export { SecureFileSystem } from "./secure-filesystem.js";
+export { StatefulFileManager } from "./file-manager.js";
+export {
+  parseErrors,
+  formatErrorsForPrompt,
+  type ParsedError,
+} from "./error-parser.js";
+export {
+  E2BSandbox,
+  LocalSandbox,
+  createSandbox,
+  type SandboxExecutor,
+} from "./e2b-sandbox.js";
+export {
+  getStarterTemplate,
+  detectProjectType,
+  nextjsStarterTemplate,
+  javaStarterTemplate,
+  type StarterTemplate,
+  type ProjectType,
+} from "./starter-templates.js";
 
 export interface ExecutionService {
   buildValidationCommands(repo: string): string[];

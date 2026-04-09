@@ -14,6 +14,6 @@
       "@horcruxsys/nagini/persistence": ["../persistence/src/index.ts"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "../execution/src/e2b.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

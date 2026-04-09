@@ -4,13 +4,17 @@ import Fastify from "fastify";
 import {
   ApprovalDecisionInputSchema,
   ArchitectWorkflowRequestSchema,
+  ImplementationRequestSchema,
   type RunRecord,
+  type ImplementationSessionState,
   RunRequestSchema,
 } from "@horcruxsys/nagini/domain";
 import {
   architectEmitter,
   ArchitectWorkflowService,
   buildRunTimeline,
+  implementationEmitter,
+  ImplementationWorkflowService,
   OrchestratorWorkflowService,
 } from "@horcruxsys/nagini/workflows";
 
@@ -24,6 +28,7 @@ export function buildServer() {
 
   const workflowService = new OrchestratorWorkflowService();
   const architectService = new ArchitectWorkflowService();
+  const implementationService = new ImplementationWorkflowService();
 
   app.get("/health", async () => ({
     status: "ok",
@@ -312,6 +317,116 @@ export function buildServer() {
         };
 
         architectEmitter.on("architect:thinking", onThinking);
+        request.raw.on("close", cleanup);
+      });
+    },
+  );
+
+  // ── Implementation / Self-Healing Code Engine endpoints ──────────────────
+
+  /**
+   * POST /api/implementation
+   * Starts an implementation session from an approved blueprint.
+   * Body: { blueprintSessionId }
+   * Returns the initial ImplementationSessionState immediately.
+   * Progress is streamed via /api/implementation/:sessionId/stream.
+   */
+  app.post("/api/implementation", async (request, reply) => {
+    const parsed = ImplementationRequestSchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      return reply.status(400).send({
+        message: "Invalid implementation request.",
+        issues: parsed.error.flatten(),
+      });
+    }
+
+    try {
+      const state = await implementationService.run(parsed.data);
+      return reply.status(202).send(state);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Implementation failed.";
+      const statusCode = message.includes("not found") ? 404 : 500;
+      return reply.status(statusCode).send({ message });
+    }
+  });
+
+  /**
+   * GET /api/implementation/:sessionId
+   * Returns the current state of an implementation session.
+   */
+  app.get("/api/implementation/:sessionId", async (request, reply) => {
+    const { sessionId } = request.params as { sessionId: string };
+    const state = implementationService.getSession(sessionId);
+
+    if (!state) {
+      return reply.status(404).send({
+        message: `Implementation session ${sessionId} was not found.`,
+      });
+    }
+
+    return state;
+  });
+
+  /**
+   * GET /api/implementation/:sessionId/stream
+   * Server-Sent Events stream that pipes real-time progress and sandbox
+   * terminal output to the PM cockpit.
+   *
+   * Events emitted:
+   *   `implementation:progress` — full ImplementationSessionState snapshot
+   */
+  app.get(
+    "/api/implementation/:sessionId/stream",
+    async (request, reply) => {
+      const { sessionId } = request.params as { sessionId: string };
+
+      reply.raw.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      });
+
+      const isTerminal = (status: string) =>
+        status === "completed" || status === "failed";
+
+      const sendState = (s: ImplementationSessionState) => {
+        reply.raw.write(
+          `event: implementation:progress\ndata: ${JSON.stringify(s)}\n\n`,
+        );
+      };
+
+      // Send current state immediately if the session exists
+      const current = implementationService.getSession(sessionId);
+      if (current) {
+        sendState(current);
+        if (isTerminal(current.status)) {
+          reply.raw.end();
+          return reply;
+        }
+      }
+
+      return new Promise((resolve) => {
+        const onProgress = (state: unknown) => {
+          const s = state as ImplementationSessionState;
+          if (s.sessionId === sessionId) {
+            sendState(s);
+            if (isTerminal(s.status)) {
+              cleanup();
+            }
+          }
+        };
+
+        const cleanup = () => {
+          implementationEmitter.off("implementation:progress", onProgress);
+          if (!reply.raw.writableEnded) {
+            reply.raw.end();
+          }
+          resolve(reply);
+        };
+
+        implementationEmitter.on("implementation:progress", onProgress);
         request.raw.on("close", cleanup);
       });
     },
