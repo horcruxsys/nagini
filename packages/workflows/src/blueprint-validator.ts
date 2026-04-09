@@ -6,6 +6,7 @@ import {
 export interface BlueprintValidationResult {
   valid: boolean;
   errors: string[];
+  warnings: string[];
 }
 
 /**
@@ -27,6 +28,10 @@ const KNOWN_HALLUCINATED_DEPS = new Set([
 /**
  * Validates a BlueprintSpec JSON object for structural correctness and
  * checks for commonly hallucinated dependency names.
+ *
+ * - `errors`: blocking issues that make the blueprint invalid.
+ * - `warnings`: advisory notices that should be reviewed but do not
+ *   prevent the blueprint from being used.
  */
 export function validateBlueprint(
   raw: unknown,
@@ -37,13 +42,14 @@ export function validateBlueprint(
     const errors = parsed.error.errors.map(
       (e) => `${e.path.join(".")}: ${e.message}`,
     );
-    return { valid: false, errors };
+    return { valid: false, errors, warnings: [] };
   }
 
   const blueprint = parsed.data as BlueprintSpec;
+  const errors: string[] = [];
   const warnings: string[] = [];
 
-  // Check for hallucinated dependency names in tech stack
+  // Check for hallucinated dependency names in tech stack (advisory)
   for (const entry of blueprint.techStackRules) {
     if (KNOWN_HALLUCINATED_DEPS.has(entry.name)) {
       warnings.push(
@@ -52,7 +58,7 @@ export function validateBlueprint(
     }
   }
 
-  // Ensure at least one endpoint or data entity is present for a meaningful blueprint
+  // Advisory: an empty blueprint may indicate an incomplete spec
   if (
     blueprint.apiManifest.length === 0 &&
     blueprint.dataModel.length === 0
@@ -62,14 +68,14 @@ export function validateBlueprint(
     );
   }
 
-  // Ensure API paths start with "/"
+  // Blocking: API paths must start with "/"
   for (const endpoint of blueprint.apiManifest) {
     if (!endpoint.path.startsWith("/")) {
-      warnings.push(
-        `API endpoint path "${endpoint.path}" should start with "/".`,
+      errors.push(
+        `API endpoint path "${endpoint.path}" must start with "/".`,
       );
     }
   }
 
-  return { valid: warnings.length === 0, errors: warnings };
+  return { valid: errors.length === 0, errors, warnings };
 }
