@@ -144,7 +144,7 @@ export class LocalSandbox implements SandboxExecutor {
 
   private getRootDir(): string {
     if (!this.rootDir || this.destroyed) {
-      throw new Error("LocalSandbox has not been initialised or was destroyed.");
+      throw new Error("LocalSandbox has not been initialized or was destroyed.");
     }
     return this.rootDir;
   }

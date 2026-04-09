@@ -25,15 +25,18 @@ const TS_COMPILER_RE =
   /^(?<file>[^\s(]+\.tsx?)\((?<line>\d+),(?<col>\d+)\): error (?<code>TS\d+): (?<msg>.+)$/;
 
 // ESLint errors: /path/to/file.ts  12:5  error  <msg>  <rule>
+// Use [ ]+ instead of \s+ to avoid ReDoS via whitespace repetition.
 const ESLINT_RE =
-  /^\s*(?<file>\/[^\s]+\.tsx?)\s+(?<line>\d+):(?<col>\d+)\s+error\s+(?<msg>.+?)\s{2,}(?<rule>\S+)$/;
+  /^\s*(?<file>\/[^\s]+\.tsx?)[ ]+(?<line>\d+):(?<col>\d+)[ ]+error[ ]+(?<msg>[^\s].*?)[ ]{2,}(?<rule>\S+)$/;
 
 // npm install errors: npm ERR! code E404 / npm ERR! 404 Not Found
-const NPM_ERROR_RE = /^npm ERR!\s+(?<msg>.+)$/;
+// Use a single space instead of \s+ to prevent ReDoS.
+const NPM_ERROR_RE = /^npm ERR! (?<msg>[^\s][^\n]*)$/;
 
 // Maven compile errors: [ERROR] /path/to/File.java:[12,5] error: <msg>
+// Use a single space instead of \s+ to prevent ReDoS.
 const MAVEN_ERROR_RE =
-  /^\[ERROR\]\s+(?<file>[^\s[]+\.java):\[(?<line>\d+),(?<col>\d+)\]\s+(?<msg>.+)$/;
+  /^\[ERROR\] (?<file>[^\s[]+\.java):\[(?<line>\d+),(?<col>\d+)\] (?<msg>[^\n]+)$/;
 
 // Gradle errors: e: file:/path/to/File.kt:12:5: error: <msg>
 const GRADLE_ERROR_RE =
