@@ -1,6 +1,5 @@
 import type {
   ContextPack,
-  ImplementationPlanTask,
   ImplementationPlan,
   ValidationReport,
 } from "@horcruxsys/nagini/domain";
@@ -96,8 +95,4 @@ export function summarizeReview(validation?: ValidationReport): string[] {
   return [
     "Validation needs revision before the run can be considered complete.",
   ];
-}
-
-export function toCoderTasks(plan: ImplementationPlan): ImplementationPlanTask[] {
-  return plan.tasks;
 }

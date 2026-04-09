@@ -7,7 +7,10 @@ export class SecureFileSystem {
   private resolveSafePath(targetPath: string): string {
     const normalizedRoot = path.resolve(this.rootDir);
     const resolved = path.resolve(normalizedRoot, targetPath);
-    if (!resolved.startsWith(`${normalizedRoot}${path.sep}`)) {
+    if (
+      resolved !== normalizedRoot &&
+      !resolved.startsWith(`${normalizedRoot}${path.sep}`)
+    ) {
       throw new Error("Path is outside the allowed sandbox root.");
     }
     return resolved;
