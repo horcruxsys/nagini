@@ -21,6 +21,12 @@ import { LocalExecutionService } from "@horcruxsys/nagini/execution";
 import { HybridKnowledgeService } from "@horcruxsys/nagini/knowledge";
 import { createPersistenceLayer } from "@horcruxsys/nagini/persistence";
 export { createApprovalInterrupt, type WorkflowInterrupt } from "./interrupt.js";
+export {
+  ArchitectWorkflowService,
+  architectEmitter,
+  type ArchitectWorkflowRunOptions,
+} from "./architect-workflow.js";
+export { validateBlueprint, type BlueprintValidationResult } from "./blueprint-validator.js";
 
 export class OrchestratorWorkflowService {
   private readonly config = loadPartialConfig();

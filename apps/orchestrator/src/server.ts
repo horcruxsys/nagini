@@ -3,9 +3,13 @@ import Fastify from "fastify";
 
 import {
   ApprovalDecisionInputSchema,
+  ArchitectWorkflowRequestSchema,
+  type RunRecord,
   RunRequestSchema,
 } from "@horcruxsys/nagini/domain";
 import {
+  architectEmitter,
+  ArchitectWorkflowService,
   buildRunTimeline,
   OrchestratorWorkflowService,
 } from "@horcruxsys/nagini/workflows";
@@ -19,6 +23,7 @@ export function buildServer() {
   });
 
   const workflowService = new OrchestratorWorkflowService();
+  const architectService = new ArchitectWorkflowService();
 
   app.get("/health", async () => ({
     status: "ok",
@@ -161,7 +166,7 @@ export function buildServer() {
     });
 
     let sentEventsCount = 0;
-    const streamEvents = (currentRun: any) => {
+    const streamEvents = (currentRun: RunRecord) => {
       const events = buildRunTimeline(currentRun);
       const newEvents = events.slice(sentEventsCount);
       for (const event of newEvents) {
@@ -182,7 +187,7 @@ export function buildServer() {
     }
 
     return new Promise((resolve) => {
-      const onRunChange = (updatedRun: any) => {
+      const onRunChange = (updatedRun: RunRecord) => {
         if (updatedRun.id === runId) {
           streamEvents(updatedRun);
           if (isTerminal(updatedRun.status)) {
@@ -203,6 +208,114 @@ export function buildServer() {
       request.raw.on("close", cleanup);
     });
   });
+
+  // ── Architect / Blueprint endpoints ──────────────────────────────────────
+
+  /**
+   * POST /api/architect/blueprint
+   * Starts or resumes an Architect Workflow session.
+   * Body: { prompt, sessionId?, clarifications? }
+   * Returns the final ArchitectWorkflowState (or intermediate if clarification needed).
+   */
+  app.post("/api/architect/blueprint", async (request, reply) => {
+    const parsed = ArchitectWorkflowRequestSchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      return reply.status(400).send({
+        message: "Invalid architect workflow request.",
+        issues: parsed.error.flatten(),
+      });
+    }
+
+    try {
+      const state = await architectService.run(parsed.data);
+      const statusCode = state.status === "approved" ? 201 : 200;
+      return reply.status(statusCode).send(state);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Architect workflow failed.";
+      return reply.status(500).send({ message });
+    }
+  });
+
+  /**
+   * GET /api/architect/blueprint/:sessionId
+   * Returns the current state of an Architect Workflow session.
+   */
+  app.get("/api/architect/blueprint/:sessionId", async (request, reply) => {
+    const { sessionId } = request.params as { sessionId: string };
+    const state = architectService.getSession(sessionId);
+
+    if (!state) {
+      return reply
+        .status(404)
+        .send({ message: `Architect session ${sessionId} was not found.` });
+    }
+
+    return state;
+  });
+
+  /**
+   * GET /api/architect/blueprint/:sessionId/stream
+   * Server-Sent Events stream for the Architect's real-time thinking log.
+   * Clients receive `architect:thinking` events as the workflow progresses.
+   */
+  app.get(
+    "/api/architect/blueprint/:sessionId/stream",
+    async (request, reply) => {
+      const { sessionId } = request.params as { sessionId: string };
+
+      reply.raw.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      });
+
+      const isArchitectTerminal = (s: string) =>
+        s === "approved" || s === "needs_clarification";
+
+      // Send current state immediately if session exists
+      const current = architectService.getSession(sessionId);
+      if (current) {
+        reply.raw.write(
+          `event: architect:thinking\ndata: ${JSON.stringify(current)}\n\n`,
+        );
+
+        if (isArchitectTerminal(current.status)) {
+          reply.raw.end();
+          return reply;
+        }
+      }
+
+      return new Promise((resolve) => {
+        const onThinking = (state: unknown) => {
+          const s = state as { sessionId: string; status: string };
+          if (s.sessionId === sessionId) {
+            reply.raw.write(
+              `event: architect:thinking\ndata: ${JSON.stringify(state)}\n\n`,
+            );
+
+            if (isArchitectTerminal(s.status)) {
+              cleanup();
+            }
+          }
+        };
+
+        const cleanup = () => {
+          architectEmitter.off("architect:thinking", onThinking);
+          if (!reply.raw.writableEnded) {
+            reply.raw.end();
+          }
+          resolve(reply);
+        };
+
+        architectEmitter.on("architect:thinking", onThinking);
+        request.raw.on("close", cleanup);
+      });
+    },
+  );
 
   return app;
 }
